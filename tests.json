@@ -1,6 +1,13 @@
 {
-  "version": "0.0.1",
+  "version": "0.0.2",
   "format": [
+    {
+      "title": "allows empty data",
+      "input": {
+        "data" : {}
+      },
+      "output": ""
+    },
     {
       "title": "maps one data field",
       "input": {
