@@ -14,9 +14,9 @@ type Tests struct {
 }
 
 type TestSpec struct {
-	Title  interface{}            `json:"title"`
+	Title  string                 `json:"title"`
 	Input  map[string]interface{} `json:"input"`
-	Output interface{}            `json:"output"`
+	Output string                 `json:"output"`
 }
 
 type keyVal map[string]interface{}
