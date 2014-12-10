@@ -6,7 +6,7 @@ PKGS = $(PKG) $(SUBPKGS)
 
 .PHONY: test golint README
 
-test: docs $(PKGS)
+test: docs tests.json $(PKGS)
 
 golint:
 	@go get github.com/golang/lint/golint
@@ -37,3 +37,6 @@ docs: $(addsuffix /README.md, $(SUBPKG_NAMES)) README.md
 %/README.md: %/*.go
 	@go get github.com/robertkrimen/godocdown/godocdown
 	@godocdown $(PKG)/$(shell dirname $@) > $@
+
+tests.json:
+	wget https://raw.githubusercontent.com/Clever/kayvee/master/tests.json -O test/tests.json

@@ -1,12 +1,12 @@
 {
-  "version": "0.0.3",
+  "version": "1.0.0",
   "format": [
     {
       "title": "allows empty data",
       "input": {
         "data" : {}
       },
-      "output": ""
+      "output": "{}"
     },
     {
       "title": "maps one data field",
@@ -15,7 +15,7 @@
           "context": "fake_context"
         }
       },
-      "output": "context=\"fake_context\""
+      "output": "{\"context\":\"fake_context\"}"
     },
     {
       "title": "maps multiple data fields",
@@ -25,7 +25,7 @@
           "context": "fake_context"
         }
       },
-      "output": "context=\"fake_context\" level=\"WARNING\""
+      "output": "{\"context\":\"fake_context\",\"level\":\"WARNING\"}"
     },
     {
       "title": "allows nested objects",
@@ -37,7 +37,7 @@
         }
 
       },
-      "output": "baz={\"nested\":\"object\"}"
+      "output": "{\"baz\":{\"nested\":\"object\"}}"
     },
     {
       "title": "allows spaces",
@@ -46,7 +46,7 @@
           "spaces": " set c"
         }
       },
-      "output": "spaces=\" set c\""
+      "output": "{\"spaces\":\" set c\"}"
     },
     {
       "title": "allows single-quote",
@@ -55,7 +55,7 @@
           "singlequote": "'"
         }
       },
-      "output": "singlequote=\"'\""
+      "output": "{\"singlequote\":\"'\"}"
     },
     {
       "title": "allows double-quote",
@@ -64,7 +64,7 @@
           "doublequote": "\""
         }
       },
-      "output": "doublequote=\"\\\"\""
+      "output": "{\"doublequote\":\"\\\"\"}"
     }
   ],
   "formatLog": [
@@ -76,7 +76,7 @@
         "title": "BAD_THINGS_HAPPENING",
         "data": {}
       },
-      "output": "source=\"SOURCE\" level=\"error\" title=\"BAD_THINGS_HAPPENING\""
+      "output": "{\"source\":\"SOURCE\",\"level\":\"error\",\"title\":\"BAD_THINGS_HAPPENING\"}"
     },
     {
       "title": "outputs reserved fields and sorted data",
@@ -89,12 +89,12 @@
           "baz": "boo"
         }
       },
-      "output": "source=\"SOURCE\" level=\"error\" title=\"BAD_THINGS_HAPPENING\" baz=\"boo\" foo=\"bar\""
+      "output": "{\"source\":\"SOURCE\",\"level\":\"error\",\"title\":\"BAD_THINGS_HAPPENING\",\"baz\":\"boo\",\"foo\":\"bar\"}"
     },
     {
       "title": "outputs reserved fields, even if undefined",
       "input": {},
-      "output": "source=\"\" level=\"\" title=\"\""
+      "output": "{\"source\":\"\",\"level\":\"\",\"title\":\"\"}"
     }
   ]
 }

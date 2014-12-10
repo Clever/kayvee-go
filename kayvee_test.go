@@ -2,6 +2,7 @@ package kayvee
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
@@ -21,6 +22,22 @@ type TestSpec struct {
 
 type keyVal map[string]interface{}
 
+// takes two strings (which are assumed to be JSON)
+func compareJSONStrings(t *testing.T, expected string, actual string) {
+	actualJSON := map[string]interface{}{}
+	expectedJSON := map[string]interface{}{}
+	err := json.Unmarshal([]byte(actual), &actualJSON)
+	if err != nil {
+		panic(fmt.Sprint("failed to json unmarshal `actual`:", actual))
+	}
+	err = json.Unmarshal([]byte(expected), &expectedJSON)
+	if err != nil {
+		panic(fmt.Sprint("failed to json unmarshal `expected`:", expected))
+	}
+
+	assert.Equal(t, expectedJSON, actualJSON)
+}
+
 func Test_KayveeSpecs(t *testing.T) {
 	file, err := ioutil.ReadFile("tests.json")
 	assert.NoError(t, err, "failed to open test specs (tests.json)")
@@ -31,7 +48,8 @@ func Test_KayveeSpecs(t *testing.T) {
 	for _, spec := range tests.FormatTests {
 		expected := spec.Output
 		actual := Format(spec.Input["data"].(map[string]interface{}))
-		assert.Equal(t, expected, actual)
+
+		compareJSONStrings(t, expected, actual)
 	}
 
 	for _, spec := range tests.FormatLogTests {
@@ -43,7 +61,8 @@ func Test_KayveeSpecs(t *testing.T) {
 		title, _ := spec.Input["title"].(string)
 		data, _ := spec.Input["data"].(map[string]interface{})
 		actual := FormatLog(source, level, title, data)
-		assert.Equal(t, expected, actual)
+
+		compareJSONStrings(t, expected, actual)
 	}
 
 }
