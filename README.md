@@ -13,7 +13,7 @@ Here's an example program that outputs a kayvee formatted string:
 
     import(
       "fmt"
-      "gopkg.in/Clever/kayvee.v0"
+      "gopkg.in/Clever/kayvee-go.v0"
     )
 
     func main() {
