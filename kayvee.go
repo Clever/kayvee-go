@@ -8,12 +8,14 @@ import (
 
 type LogLevel string
 
-const Unknown LogLevel = "unknown"
-const Critical LogLevel = "critical"
-const Error LogLevel = "error"
-const Warning LogLevel = "warning"
-const Info LogLevel = "info"
-const Trace LogLevel = "trace"
+const (
+	Unknown  LogLevel = "unknown"
+	Critical          = "critical"
+	Error             = "error"
+	Warning           = "warning"
+	Info              = "info"
+	Trace             = "trace"
+)
 
 // Format converts a map to a string of space-delimited key=val pairs
 func Format(data map[string]interface{}) string {
