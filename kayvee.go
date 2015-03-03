@@ -4,6 +4,14 @@ import (
 	"encoding/json"
 )
 
+// Log Levels:
+const Unknown = "unknown"
+const Critical = "critical"
+const Error = "error"
+const Warning = "warning"
+const Info = "info"
+const Trace = "trace"
+
 // Format converts a map to a string of space-delimited key=val pairs
 func Format(data map[string]interface{}) string {
 	formattedString, _ := json.Marshal(data)
