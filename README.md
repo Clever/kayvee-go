@@ -1,6 +1,6 @@
 # kayvee
 --
-    import "gopkg.in/clever/kayvee-go.v1"
+    import "gopkg.in/clever/kayvee-go.v2"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "key=val" format.
@@ -13,7 +13,7 @@ Here's an example program that outputs a kayvee formatted string:
 
     import(
       "fmt"
-      "gopkg.in/Clever/kayvee-go.v1"
+      "gopkg.in/Clever/kayvee-go.v2"
     )
 
     func main() {
