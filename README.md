@@ -41,7 +41,7 @@ Format converts a map to a string of space-delimited key=val pairs
 #### func  FormatLog
 
 ```go
-func FormatLog(source string, level string, title string, data map[string]interface{}) string
+func FormatLog(source string, level LogLevel, title string, data map[string]interface{}) string
 ```
 FormatLog is similar to Format, but takes additional reserved params to promote
 logging best-practices
