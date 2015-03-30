@@ -2,7 +2,7 @@ package kayvee
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 )
 
 // Log Levels:
@@ -22,7 +22,8 @@ const (
 func Format(data map[string]interface{}) string {
 	formattedString, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("Error converting kayvee message to json %s", err.Error())
+		log.Printf("Error converting kayvee message to json: %s", err.Error())
+		return ""
 	}
 	return string(formattedString)
 }

@@ -3,9 +3,10 @@ package kayvee
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type Tests struct {
@@ -57,12 +58,37 @@ func Test_KayveeSpecs(t *testing.T) {
 
 		// Ensure correct type is passed to FormatLog, even if value undefined in tests.json
 		source, _ := spec.Input["source"].(string)
-		level, _ := spec.Input["level"].(string)
+		levelStr, _ := spec.Input["level"].(string)
+		level := convertToLogLevel(levelStr)
 		title, _ := spec.Input["title"].(string)
 		data, _ := spec.Input["data"].(map[string]interface{})
 		actual := FormatLog(source, level, title, data)
 
 		compareJSONStrings(t, expected, actual)
 	}
+}
 
+func convertToLogLevel(level string) LogLevel {
+	if level == "critical" {
+		return Critical
+	} else if level == "error" {
+		return Error
+	} else if level == "warning" {
+		return Warning
+	} else if level == "info" {
+		return Info
+	} else if level == "trace" {
+		return Trace
+	} else if level == "unknown" {
+		return Unknown
+	} else {
+		return ""
+	}
+}
+
+func TestMarshalErrors(t *testing.T) {
+	noMarshal := func() {}
+	resp := Format(map[string]interface{}{"test": noMarshal})
+	// Since it's not easy to test that we logged something here I'm just checked manually for now
+	assert.Equal(t, "", resp)
 }
