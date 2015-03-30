@@ -2,6 +2,7 @@ package kayvee
 
 import (
 	"encoding/json"
+	"log"
 )
 
 // Log Levels:
@@ -19,7 +20,11 @@ const (
 
 // Format converts a map to a string of space-delimited key=val pairs
 func Format(data map[string]interface{}) string {
-	formattedString, _ := json.Marshal(data)
+	formattedString, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error converting kayvee message to json: %s", err.Error())
+		return ""
+	}
 	return string(formattedString)
 }
 

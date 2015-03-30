@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PKG := gopkg.in/clever/kayvee-go.v0
+PKG := github.com/Clever/kayvee-go
 SUBPKG_NAMES :=
 SUBPKGS = $(addprefix $(PKG)/, $(SUBPKG_NAMES))
 PKGS = $(PKG) $(SUBPKGS)
