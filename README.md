@@ -1,7 +1,5 @@
 # kayvee
 --
-    import "gopkg.in/clever/kayvee-go.v0"
-
 Package kayvee provides methods to output human and machine parseable strings,
 with a "key=val" format.
 
@@ -20,6 +18,18 @@ Here's an example program that outputs a kayvee formatted string:
       fmt.Println(kayvee.Format(map[string]interface{}{"hello": "world"}))
     }
 
+Here's an example of using the logger in Kayvee
+
+    import kv "gopkg.in/Clever/kayvee.v3"
+
+    kv.WithFields(kv.F{"key", "value"}).Warning("yellow alert")
+    # outputs
+
+
+## Testing
+
+
+
 ## Testing
 
 
@@ -28,20 +38,3 @@ Run `make test` to execute the tests
 ## Change log
 
 v0.0.1 - Initial release.
-
-## Usage
-
-#### func  Format
-
-```go
-func Format(data map[string]interface{}) string
-```
-Format converts a map to a string of space-delimited key=val pairs
-
-#### func  FormatLog
-
-```go
-func FormatLog(source string, level string, title string, data map[string]interface{}) string
-```
-FormatLog is similar to Format, but takes additional reserved params to promote
-logging best-practices
