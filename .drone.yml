@@ -1,4 +1,4 @@
-image: go1.2
+image: bradrydzewski/go:1.4
 script:
   - make test
 notify:
