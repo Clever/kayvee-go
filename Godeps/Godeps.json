@@ -1,0 +1,18 @@
+{
+	"ImportPath": "github.com/clever/kayvee-go",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/getsentry/raven-go",
+			"Rev": "86cd4063c535cbbcbf43d84424dbd5911ab1b818"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Rev": "33a31e5dbed8302d5ab7e6d12b416e95c2c4ebc0"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/require",
+			"Rev": "33a31e5dbed8302d5ab7e6d12b416e95c2c4ebc0"
+		}
+	]
+}

@@ -1,11 +1,17 @@
 package kayvee
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"log"
+	"regexp"
 	"testing"
+
+	"github.com/getsentry/raven-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Tests struct {
@@ -21,6 +27,15 @@ type TestSpec struct {
 }
 
 type keyVal map[string]interface{}
+
+type sentryMock struct {
+	Packets []*raven.Packet
+}
+
+func (s *sentryMock) Capture(packet *raven.Packet, captureTags map[string]string) (eventID string, ch chan error) {
+	s.Packets = append(s.Packets, packet)
+	return "12345", nil
+}
 
 // takes two strings (which are assumed to be JSON)
 func compareJSONStrings(t *testing.T, expected string, actual string) {
@@ -60,9 +75,79 @@ func Test_KayveeSpecs(t *testing.T) {
 		level, _ := spec.Input["level"].(string)
 		title, _ := spec.Input["title"].(string)
 		data, _ := spec.Input["data"].(map[string]interface{})
-		actual := FormatLog(source, level, title, data)
+		loglevel := LogLevel(level)
+		actual := FormatLog(source, loglevel, title, data)
 
 		compareJSONStrings(t, expected, actual)
 	}
 
+}
+
+func assertLogFormatAndCompareContent(t *testing.T, logline, expected string) {
+	rx := regexp.MustCompile(`kayvee_test\.go.*({.*})`)
+	require.Regexp(t, rx, logline)
+	actual := rx.FindStringSubmatch(logline)[1]
+	compareJSONStrings(t, expected, actual)
+}
+
+func TestLogInfo(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger.Info("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Info, "testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+}
+
+func TestLogWarning(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger.Warning("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Warning, "testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+}
+
+func TestLogErrorNoSentryClient(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger.Error("testlogerrornosentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}, fmt.Errorf("testerror"))
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Error, "testlogerrornosentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+}
+
+func TestLogErrorNoSentryClientNoError(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger.Error("testlogerrornosentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}, nil)
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Error, "testlogerrornosentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+}
+
+func TestLogErrorSentryClientNoError(t *testing.T) {
+	buf := &bytes.Buffer{}
+	sentry := &sentryMock{}
+	logger := Logger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
+	logger.Error("testlogerrorsentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}, nil)
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Error, "testlogerrorsentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+	assert.Empty(t, sentry.Packets)
+}
+
+func TestLogErrorSentryClient(t *testing.T) {
+	buf := &bytes.Buffer{}
+	sentry := &sentryMock{}
+	logger := Logger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
+	logger.Error("testlogerrorsentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}, fmt.Errorf("testerror"))
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
+		"testkayvee", Error, "testlogerrorsentryclient", map[string]interface{}{"key1": "val1", "key2": "val2", "sentry_event_id": "12345"}))
+	require.Equal(t, 1, len(sentry.Packets))
+	require.Equal(t, 1, len(sentry.Packets[0].Interfaces))
+	exception, ok := sentry.Packets[0].Interfaces[0].(*raven.Exception)
+	require.True(t, ok)
+	assert.Equal(t, "testerror", exception.Value)
+	require.NotEmpty(t, exception.Stacktrace.Frames)
+	lastFrame := exception.Stacktrace.Frames[len(exception.Stacktrace.Frames)-1]
+	assert.Equal(t, "github.com/Clever/kayvee-go/kayvee_test.go", lastFrame.Filename)
+	assert.Equal(t, "TestLogErrorSentryClient", lastFrame.Function)
+	assert.Equal(t, 3, len(lastFrame.PreContext))
+	assert.Equal(t, 3, len(lastFrame.PostContext))
 }
