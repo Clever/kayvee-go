@@ -92,7 +92,7 @@ func assertLogFormatAndCompareContent(t *testing.T, logline, expected string) {
 
 func TestLogInfo(t *testing.T) {
 	buf := &bytes.Buffer{}
-	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger := NewSentryLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
 	logger.Info("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Info, "testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"}))
@@ -100,7 +100,7 @@ func TestLogInfo(t *testing.T) {
 
 func TestLogWarning(t *testing.T) {
 	buf := &bytes.Buffer{}
-	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger := NewSentryLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
 	logger.Warning("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Warning, "testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"}))
@@ -108,7 +108,7 @@ func TestLogWarning(t *testing.T) {
 
 func TestLogErrorNoSentryClient(t *testing.T) {
 	buf := &bytes.Buffer{}
-	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger := NewSentryLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
 	logger.Error("testlogerrornosentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}, fmt.Errorf("testerror"))
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Error, "testlogerrornosentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}))
@@ -116,7 +116,7 @@ func TestLogErrorNoSentryClient(t *testing.T) {
 
 func TestLogErrorNoSentryClientNoError(t *testing.T) {
 	buf := &bytes.Buffer{}
-	logger := NewLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
+	logger := NewSentryLogger("testkayvee", log.New(buf, "", defaultFlags), nil)
 	logger.Error("testlogerrornosentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}, nil)
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Error, "testlogerrornosentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}))
@@ -125,7 +125,7 @@ func TestLogErrorNoSentryClientNoError(t *testing.T) {
 func TestLogErrorSentryClientNoError(t *testing.T) {
 	buf := &bytes.Buffer{}
 	sentry := &sentryMock{}
-	logger := Logger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
+	logger := &SentryLogger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
 	logger.Error("testlogerrorsentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}, nil)
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Error, "testlogerrorsentryclientnoerror", map[string]interface{}{"key1": "val1", "key2": "val2"}))
@@ -135,7 +135,7 @@ func TestLogErrorSentryClientNoError(t *testing.T) {
 func TestLogErrorSentryClient(t *testing.T) {
 	buf := &bytes.Buffer{}
 	sentry := &sentryMock{}
-	logger := Logger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
+	logger := &SentryLogger{source: "testkayvee", logger: log.New(buf, "", defaultFlags), sentryClient: sentry}
 	logger.Error("testlogerrorsentryclient", map[string]interface{}{"key1": "val1", "key2": "val2"}, fmt.Errorf("testerror"))
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), FormatLog(
 		"testkayvee", Error, "testlogerrorsentryclient", map[string]interface{}{"key1": "val1", "key2": "val2", "sentry_event_id": "12345"}))
