@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PKG := github.com/Clever/kayvee-go
-SUBPKG_NAMES :=
+SUBPKG_NAMES := c-log
 SUBPKGS = $(addprefix $(PKG)/, $(SUBPKG_NAMES))
 PKGS = $(PKG) $(SUBPKGS)
 GODEP := $(GOPATH)/bin/godep
