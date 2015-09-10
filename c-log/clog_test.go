@@ -138,7 +138,7 @@ func TestDiffOutput(t *testing.T) {
 	logger.SetOutput(buf2)
 	logger.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assert.NotEqual(t, string(buf.Bytes()), string(buf2.Bytes()))
-	assert.Equal(t, string(buf.Bytes()), infoLog)
+	assert.Equal(t, infoLog, string(buf.Bytes()))
 }
 
 func TestHiddenLog(t *testing.T) {
@@ -147,36 +147,32 @@ func TestHiddenLog(t *testing.T) {
 	logger.SetLogLevel(Warning)
 	logger.SetOutput(buf)
 	logger.Debug("testlogdebug")
-	assert.Equal(t, string(buf.Bytes()), "")
+	assert.Equal(t, "", string(buf.Bytes()))
 
 	buf.Reset()
 	logger.Info("testloginfo")
-	assert.Equal(t, string(buf.Bytes()), "")
+	assert.Equal(t, "", string(buf.Bytes()))
 
 	buf.Reset()
 	logger.Warn("testlogwarning")
-	assert.NotEqual(t, string(buf.Bytes()), "")
-
-	buf.Reset()
-	logger.Warn("testlogwarning")
-	assert.NotEqual(t, string(buf.Bytes()), "")
+	assert.NotEqual(t, "", string(buf.Bytes()))
 
 	buf.Reset()
 	logger.Error("testlogerror")
-	assert.NotEqual(t, string(buf.Bytes()), "")
+	assert.NotEqual(t, "", string(buf.Bytes()))
 
 	buf.Reset()
-	logger.Warn("testlogcritical")
-	assert.NotEqual(t, string(buf.Bytes()), "")
+	logger.Critical("testlogcritical")
+	assert.NotEqual(t, "", string(buf.Bytes()))
 }
 
 func TestDiffFormat(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("clog-tester")
 	logger.SetOutput(buf)
+	logger.SetFormatter(func(data map[string]interface{}) string { return "This is a test" })
 	logger.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
-	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
-		"clog-tester", kv.Warning, "testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+	assert.Equal(t, "This is a test\n", string(buf.Bytes()))
 }
 
 func TestMultipleLoggers(t *testing.T) {
@@ -196,5 +192,5 @@ func TestMultipleLoggers(t *testing.T) {
 
 	logger2.SetOutput(buf1)
 	logger2.Info("testloginfo")
-	assert.NotEqual(t, string(buf1.Bytes()), logOutput1)
+	assert.NotEqual(t, logOutput1, string(buf1.Bytes()))
 }
