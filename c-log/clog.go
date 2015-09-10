@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 /////////////////////
@@ -29,21 +30,28 @@ const (
 	Critical
 )
 
+var logLevelNames = map[LogLevel]string{
+	Debug:    "debug",
+	Info:     "info",
+	Warning:  "warning",
+	Error:    "error",
+	Critical: "critical",
+}
+
 func (l LogLevel) String() string {
 	switch l {
 	case Debug:
-		return "debug"
+		fallthrough
 	case Info:
-		return "info"
+		fallthrough
 	case Warning:
-		return "warning"
+		fallthrough
 	case Error:
-		return "error"
+		fallthrough
 	case Critical:
-		return "critical"
-	default:
-		return "unknown"
+		return logLevelNames[l]
 	}
+	return ""
 }
 
 /////////////////////////////
@@ -69,7 +77,7 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	l.globals["source"] = source
 	l.logLvl = logLvl
 	l.formatter = formatter
-	l.logWriter = log.New(output, "", log.LstdFlags) // Prefix with date, time
+	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
 // SetLogLevel sets the default log level threshold
@@ -84,7 +92,7 @@ func (l *Logger) SetFormatter(formatter Formatter) {
 
 // SetOutput changes the output destination of the logger
 func (l *Logger) SetOutput(output io.Writer) {
-	l.logWriter = log.New(output, "", log.LstdFlags) // Prefix with date, time
+	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
 // Logging functions
@@ -187,12 +195,24 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	}
 
 	logString := l.formatter(data)
-	l.logWriter.Output(3, logString)
+	l.logWriter.Println(logString)
 }
 
 // New creates a *clog.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func New(source string) *Logger {
 	logObj := Logger{}
-	logObj.SetConfig(source, Debug, kv.Format, os.Stderr)
+	var logLvl LogLevel
+	strLogLvl := os.Getenv("LOG_LEVEL_CONFIG")
+	if strLogLvl == "" {
+		logLvl = Debug
+	} else {
+		for key, val := range logLevelNames {
+			if strings.ToLower(strLogLvl) == val {
+				logLvl = key
+				break
+			}
+		}
+	}
+	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
 	return &logObj
 }
