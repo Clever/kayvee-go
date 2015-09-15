@@ -202,7 +202,7 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 func New(source string) *Logger {
 	logObj := Logger{}
 	var logLvl LogLevel
-	strLogLvl := os.Getenv("LOG_LEVEL_CONFIG")
+	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
 	if strLogLvl == "" {
 		logLvl = Debug
 	} else {
