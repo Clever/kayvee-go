@@ -1,6 +1,9 @@
 {
-	"ImportPath": "github.com/clever/kayvee-go",
-	"GoVersion": "go1.4",
+	"ImportPath": "github.com/Clever/kayvee-go",
+	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/getsentry/raven-go",
@@ -13,6 +16,11 @@
 		{
 			"ImportPath": "github.com/stretchr/testify/require",
 			"Rev": "33a31e5dbed8302d5ab7e6d12b416e95c2c4ebc0"
+		},
+		{
+			"ImportPath": "gopkg.in/Clever/kayvee-go.v2",
+			"Comment": "v2.0.0",
+			"Rev": "6027372b81c7ac2294c5e4419ece8e04f0b740f1"
 		}
 	]
 }
