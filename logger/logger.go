@@ -1,11 +1,12 @@
 package logger
 
 import (
-	kv "gopkg.in/Clever/kayvee-go.v2"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	kv "gopkg.in/Clever/kayvee-go.v2"
 )
 
 /////////////////////
@@ -127,9 +128,14 @@ func (l *Logger) Counter(title string) {
 	l.CounterD(title, 1, m{}) // Defaults to a value of 1
 }
 
-// Gauge takes a string and integer value. It logs with LogLevel = Info, type = gauge, and value = value
-func (l *Logger) Gauge(title string, value int) {
-	l.GaugeD(title, value, m{})
+// GaugeInt takes a string and integer value. It logs with LogLevel = Info, type = gauge, and value = value
+func (l *Logger) GaugeInt(title string, value int) {
+	l.GaugeIntD(title, value, m{})
+}
+
+// GaugeFloat takes a string and float value. It logs with LogLevel = Info, type = gauge, and value = value
+func (l *Logger) GaugeFloat(title string, value float64) {
+	l.GaugeFloatD(title, value, m{})
 }
 
 // DebugD takes a string and data map. It logs with LogLevel = Debug
@@ -170,8 +176,17 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 	l.logWithLevel(Info, data)
 }
 
-// GaugeD takes a string, value, and data map. It logs with LogLevel = Info, type = gauge, and value = value
-func (l *Logger) GaugeD(title string, value int, data map[string]interface{}) {
+// GaugeIntD takes a string, an integer value, and data map. It logs with LogLevel = Info, type = gauge, and value = value
+func (l *Logger) GaugeIntD(title string, value int, data map[string]interface{}) {
+	l.gauge(title, value, data)
+}
+
+// GaugeFloatD takes a string, a float value, and data map. It logs with LogLevel = Info, type = gauge, and value = value
+func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
+	l.gauge(title, value, data)
+}
+
+func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
 	data["title"] = title
 	data["value"] = value
 	data["type"] = "gauge"
