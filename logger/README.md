@@ -115,21 +115,37 @@ func (l *Logger) ErrorD(title string, data map[string]interface{})
 ```
 ErrorD takes a string and data map. It logs with LogLevel = Error
 
-#### func (*Logger) Gauge
+#### func (*Logger) GaugeFloat
 
 ```go
-func (l *Logger) Gauge(title string, value int)
+func (l *Logger) GaugeFloat(title string, value float64)
 ```
-Gauge takes a string and integer value. It logs with LogLevel = Info, type =
+GaugeFloat takes a string and float value. It logs with LogLevel = Info, type =
 gauge, and value = value
 
-#### func (*Logger) GaugeD
+#### func (*Logger) GaugeFloatD
 
 ```go
-func (l *Logger) GaugeD(title string, value int, data map[string]interface{})
+func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interface{})
 ```
-GaugeD takes a string, value, and data map. It logs with LogLevel = Info, type =
+GaugeFloatD takes a string, a float value, and data map. It logs with LogLevel =
+Info, type = gauge, and value = value
+
+#### func (*Logger) GaugeInt
+
+```go
+func (l *Logger) GaugeInt(title string, value int)
+```
+GaugeInt takes a string and integer value. It logs with LogLevel = Info, type =
 gauge, and value = value
+
+#### func (*Logger) GaugeIntD
+
+```go
+func (l *Logger) GaugeIntD(title string, value int, data map[string]interface{})
+```
+GaugeIntD takes a string, an integer value, and data map. It logs with LogLevel
+= Info, type = gauge, and value = value
 
 #### func (*Logger) Info
 

@@ -115,17 +115,30 @@ func TestLogCounter(t *testing.T) {
 		"logger-tester", kv.Info, "testlogcounter", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "counter", "value": 2}))
 }
 
-func TestLogGauge(t *testing.T) {
+func TestLogGaugeInt(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
-	logger.Gauge("testloggauge", 0)
+	logger.GaugeInt("testloggauge", 0)
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"type": "gauge", "value": 0}))
 	buf.Reset()
-	logger.GaugeD("testloggauge", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.GaugeIntD("testloggauge", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4}))
+}
+
+func TestLogGaugeFloat(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+	logger.GaugeFloat("testloggauge", 0.0)
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
+		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"type": "gauge", "value": 0.0}))
+	buf.Reset()
+	logger.GaugeFloatD("testloggauge", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
+		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4.0}))
 }
 
 func TestDiffOutput(t *testing.T) {
