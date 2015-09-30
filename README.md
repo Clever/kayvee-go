@@ -1,9 +1,11 @@
 # kayvee
 --
-    import "gopkg.in/clever/kayvee-go.v2"
+    import "gopkg.in/clever/kayvee-go.v2.1"
 
 Package kayvee provides methods to output human and machine parseable strings,
-with a "key=val" format.
+with a "json" format.
+
+## [Logger Documentation](./logger)
 
 ## Example
 
@@ -27,7 +29,8 @@ Run `make test` to execute the tests
 
 ## Change log
 
-v0.0.1 - Initial release.
+v2.1 - Add kayvee-go/logger with log level, counters, and gauge support
+v0.1 - Initial release.
 
 ## Usage
 
