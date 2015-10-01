@@ -3,7 +3,6 @@ PKG := github.com/Clever/kayvee-go
 SUBPKG_NAMES := logger
 SUBPKGS = $(addprefix $(PKG)/, $(SUBPKG_NAMES))
 PKGS = $(PKG) $(SUBPKGS)
-GODEP := $(GOPATH)/bin/godep
 
 .PHONY: test golint README
 
@@ -12,14 +11,12 @@ test: docs tests.json $(PKGS)
 golint:
 	@go get github.com/golang/lint/golint
 
-$(GODEP):
-	go get github.com/tools/godep
-
 README.md: *.go
 	@go get github.com/robertkrimen/godocdown/godocdown
 	@$(GOPATH)/bin/godocdown $(PKG) > README.md
 
-$(PKGS): golint docs $(GODEP)
+$(PKGS): golint docs
+	@go get -d -t $@
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)
 	@echo "LINTING..."
@@ -27,11 +24,11 @@ ifneq ($(NOLINT),1)
 	@echo ""
 endif
 ifeq ($(COVERAGE),1)
-	$(GODEP) go test -cover -coverprofile=$(GOPATH)/src/$@/c.out $@ -test.v
-	$(GODEP) go tool cover -html=$(GOPATH)/src/$@/c.out
+	go test -cover -coverprofile=$(GOPATH)/src/$@/c.out $@ -test.v
+	go tool cover -html=$(GOPATH)/src/$@/c.out
 else
 	@echo "TESTING..."
-	$(GODEP) go test $@ -test.v
+	go test $@ -test.v
 	@echo ""
 endif
 
