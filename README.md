@@ -1,6 +1,6 @@
 # kayvee
 --
-    import "gopkg.in/clever/kayvee-go.v2"
+    import "gopkg.in/Clever/kayvee-go.v2"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
