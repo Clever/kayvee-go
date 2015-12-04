@@ -11,8 +11,6 @@ ifeq "$(GOVERSION)" ""
   $(error must be running Go version 1.5)
 endif
 
-export GO15VENDOREXPERIMENT = 1
-
 test: docs tests.json $(PKGS)
 
 golint:
