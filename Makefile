@@ -24,7 +24,7 @@ README.md: *.go
 
 $(PKGS): golint docs
 	@echo "Running go get on package"
-	@go get -u -d -t $@
+	@go get -u $@
 	@echo "Successfully ran go get on package"
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)
