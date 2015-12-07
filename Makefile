@@ -6,6 +6,11 @@ PKGS = $(PKG) $(SUBPKGS)
 
 .PHONY: test golint README
 
+GOVERSION := $(shell go version | grep 1.5)
+ifeq "$(GOVERSION)" ""
+  $(error must be running Go version 1.5)
+endif
+
 test: docs tests.json $(PKGS)
 
 golint:
