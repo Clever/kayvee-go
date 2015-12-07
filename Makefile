@@ -11,6 +11,8 @@ ifeq "$(GOVERSION)" ""
   $(error must be running Go version 1.5)
 endif
 
+export GO15VENDOREXPERIMENT = 1
+
 test: docs tests.json $(PKGS)
 
 golint:
@@ -21,7 +23,9 @@ README.md: *.go
 	@$(GOPATH)/bin/godocdown $(PKG) > README.md
 
 $(PKGS): golint docs
+	@echo "Running go get on package"
 	@go get -d -t $@
+	@echo "Successfully ran go get on package"
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)
 	@echo "LINTING..."
