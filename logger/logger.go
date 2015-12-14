@@ -213,7 +213,9 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	l.logWriter.Println(logString)
 }
 
-// New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+// New creates a *logger.Logger.
+// Uses kayvee Formatter, and std.err output by default
+// Uses the `KAYVEE_LOG_LEVEL` environment variable to assign log level if set. Otherwise defaults to Debug.
 func New(source string) *Logger {
 	logObj := Logger{}
 	var logLvl LogLevel
