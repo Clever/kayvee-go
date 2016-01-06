@@ -202,3 +202,9 @@ Warn takes a string and logs with LogLevel = Warning
 func (l *Logger) WarnD(title string, data map[string]interface{})
 ```
 WarnD takes a string and data map. It logs with LogLevel = Warning
+
+#### type M
+
+```go
+type M map[string]interface{}
+```

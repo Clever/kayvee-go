@@ -20,7 +20,7 @@ type Formatter func(data map[string]interface{}) string
 
 // LogLevel is an enum is used to denote level of logging
 type LogLevel int
-type m map[string]interface{}
+type M map[string]interface{}
 
 // Constants used to define different LogLevels supported
 const (
@@ -100,42 +100,42 @@ func (l *Logger) SetOutput(output io.Writer) {
 
 // Debug takes a string and logs with LogLevel = Debug
 func (l *Logger) Debug(title string) {
-	l.DebugD(title, m{})
+	l.DebugD(title, M{})
 }
 
 // Info takes a string and logs with LogLevel = Info
 func (l *Logger) Info(title string) {
-	l.InfoD(title, m{})
+	l.InfoD(title, M{})
 }
 
 // Warn takes a string and logs with LogLevel = Warning
 func (l *Logger) Warn(title string) {
-	l.WarnD(title, m{})
+	l.WarnD(title, M{})
 }
 
 // Error takes a string and logs with LogLevel = Error
 func (l *Logger) Error(title string) {
-	l.ErrorD(title, m{})
+	l.ErrorD(title, M{})
 }
 
 // Critical takes a string and logs with LogLevel = Critical
 func (l *Logger) Critical(title string) {
-	l.CriticalD(title, m{})
+	l.CriticalD(title, M{})
 }
 
 // Counter takes a string and logs with LogLevel = Info, type = counter, and value = 1
 func (l *Logger) Counter(title string) {
-	l.CounterD(title, 1, m{}) // Defaults to a value of 1
+	l.CounterD(title, 1, M{}) // Defaults to a value of 1
 }
 
 // GaugeInt takes a string and integer value. It logs with LogLevel = Info, type = gauge, and value = value
 func (l *Logger) GaugeInt(title string, value int) {
-	l.GaugeIntD(title, value, m{})
+	l.GaugeIntD(title, value, M{})
 }
 
 // GaugeFloat takes a string and float value. It logs with LogLevel = Info, type = gauge, and value = value
 func (l *Logger) GaugeFloat(title string, value float64) {
-	l.GaugeFloatD(title, value, m{})
+	l.GaugeFloatD(title, value, M{})
 }
 
 // DebugD takes a string and data map. It logs with LogLevel = Debug
