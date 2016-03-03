@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PKG := github.com/Clever/kayvee-go
-SUBPKG_NAMES := logger
+SUBPKG_NAMES := logger validator
 SUBPKGS = $(addprefix $(PKG)/, $(SUBPKG_NAMES))
 PKGS = $(PKG) $(SUBPKGS)
 
