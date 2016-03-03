@@ -41,8 +41,11 @@ Run `make test` to execute the tests
 
 ## Change log
 
-v2.1 - Add kayvee-go/logger with log level, counters, and gauge support
-v0.1 - Initial release.
+- v2.4 - Add kayvee-go/validator for asserting that raw log lines are in a valid kayvee format.
+- v2.3 - Expose logger.M.
+- v2.2 - Remove godeps.
+- v2.1 - Add kayvee-go/logger with log level, counters, and gauge support
+- v0.1 - Initial release.
 
 ## Backward Compatibility
 
