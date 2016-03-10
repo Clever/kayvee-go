@@ -1,47 +1,16 @@
+include golang.mk
+.DEFAULT_GOAL := test # override default goal set in library makefile
+
+.PHONY: test $(PKGS)
 SHELL := /bin/bash
-PKG := github.com/Clever/kayvee-go
-SUBPKG_NAMES := logger validator
-SUBPKGS = $(addprefix $(PKG)/, $(SUBPKG_NAMES))
-PKGS = $(PKG) $(SUBPKGS)
+PKGS = $(shell go list ./...)
+$(eval $(call golang-version-check,1.5))
 
-.PHONY: test golint README
+test: tests.json $(PKGS)
 
-GOVERSION := $(shell go version | grep 1.5)
-ifeq "$(GOVERSION)" ""
-  $(error must be running Go version 1.5)
-endif
-
-test: docs tests.json $(PKGS)
-
-golint:
-	@go get github.com/golang/lint/golint
-
-README.md: *.go
-	@go get github.com/robertkrimen/godocdown/godocdown
-	@$(GOPATH)/bin/godocdown $(PKG) > README.md
-
-$(PKGS): golint docs
+$(PKGS): golang-test-all-deps
 	@go get -d -t $@
-	@gofmt -w=true $(GOPATH)/src/$@*/**.go
-ifneq ($(NOLINT),1)
-	@echo "LINTING..."
-	@PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
-	@echo ""
-endif
-ifeq ($(COVERAGE),1)
-	go test -cover -coverprofile=$(GOPATH)/src/$@/c.out $@ -test.v
-	go tool cover -html=$(GOPATH)/src/$@/c.out
-else
-	@echo "TESTING..."
-	go test $@ -test.v
-	@echo ""
-endif
-
-docs: $(addsuffix /README.md, $(SUBPKG_NAMES)) README.md
-%/README.md: PATH := $(PATH):$(GOPATH)/bin
-%/README.md: %/*.go
-	@go get github.com/robertkrimen/godocdown/godocdown
-	@$(GOPATH)/bin/godocdown $(PKG)/$(shell dirname $@) > $@
+	$(call golang-test-all,$@)
 
 tests.json:
 	wget https://raw.githubusercontent.com/Clever/kayvee/master/tests.json -O test/tests.json
