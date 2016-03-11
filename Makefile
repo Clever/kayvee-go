@@ -8,9 +8,9 @@ $(eval $(call golang-version-check,1.5))
 
 test: tests.json $(PKGS)
 
-$(PKGS): golang-test-all-deps
+$(PKGS): golang-test-all-strict-deps
 	@go get -d -t $@
-	$(call golang-test-all,$@)
+	$(call golang-test-all-strict,$@)
 
 tests.json:
-	wget https://raw.githubusercontent.com/Clever/kayvee/master/tests.json -O test/tests.json
+	cp tests.json test/tests.json

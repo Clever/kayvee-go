@@ -20,6 +20,8 @@ type Formatter func(data map[string]interface{}) string
 
 // LogLevel is an enum is used to denote level of logging
 type LogLevel int
+
+// M is a convenience type for passing data into a log message.
 type M map[string]interface{}
 
 // Constants used to define different LogLevels supported

@@ -28,11 +28,11 @@ func compareJSONStrings(t *testing.T, expected string, actual string) {
 	expectedJSON := map[string]interface{}{}
 	err := json.Unmarshal([]byte(actual), &actualJSON)
 	if err != nil {
-		t.Fatalf("failed to json unmarshal `actual`:", actual)
+		t.Fatalf("failed to json unmarshal `actual`: %s", actual)
 	}
 	err = json.Unmarshal([]byte(expected), &expectedJSON)
 	if err != nil {
-		t.Fatalf("failed to json unmarshal `expected`:", expected)
+		t.Fatalf("failed to json unmarshal `expected`: %s", expected)
 	}
 
 	assert.Equal(t, expectedJSON, actualJSON)
