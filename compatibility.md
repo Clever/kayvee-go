@@ -53,7 +53,7 @@ Logger is an interface satisfied by all loggers that use kayvee to Log results
 
 ## Removed Compatibility
 
-The following functions formerly existed, but are have been removed.
+The following functions formerly existed, but have been removed.
 
 #### type SentryLogger
 
