@@ -217,7 +217,14 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func New(source string) *Logger {
-	logObj := Logger{}
+	return NewWithContext(source, nil)
+}
+
+// NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+func NewWithContext(source string, context M) *Logger {
+	logObj := Logger{
+		globals: context,
+	}
 	var logLvl LogLevel
 	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
 	if strLogLvl == "" {
