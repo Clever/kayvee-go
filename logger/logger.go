@@ -79,7 +79,11 @@ type Logger struct {
 }
 
 // SetConfig allows configuration changes in one go
-func (l *Logger) SetConfig(logLvl LogLevel, formatter Formatter, output io.Writer) {
+func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer) {
+	if l.globals == nil {
+		l.globals = make(map[string]interface{})
+	}
+	l.globals["source"] = source
 	l.logLvl = logLvl
 	l.formatter = formatter
 	l.logWriter = log.New(output, "", 0) // No prefixes
@@ -224,7 +228,7 @@ func New(source string) *Logger {
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func NewWithContext(source string, contextValues map[string]interface{}) *Logger {
-	context := M{"source": source}
+	context := M{}
 	for k, v := range contextValues {
 		if reservedKeyNames[strings.ToLower(k)] {
 			log.Printf("WARN: kayvee logger reserves '%s' from being set as context", k)
@@ -249,6 +253,6 @@ func NewWithContext(source string, contextValues map[string]interface{}) *Logger
 			}
 		}
 	}
-	logObj.SetConfig(logLvl, kv.Format, os.Stderr)
+	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
 	return &logObj
 }
