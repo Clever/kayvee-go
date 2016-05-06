@@ -33,6 +33,13 @@ const (
 	Critical
 )
 
+var reservedKeyNames = map[string]bool{
+	"title":  true,
+	"source": true,
+	"value":  true,
+	"type":   true,
+}
+
 var logLevelNames = map[LogLevel]string{
 	Debug:    "debug",
 	Info:     "info",
@@ -219,6 +226,10 @@ func New(source string) *Logger {
 func NewWithContext(source string, contextValues map[string]interface{}) *Logger {
 	context := M{"source": source}
 	for k, v := range contextValues {
+		if reservedKeyNames[strings.ToLower(k)] {
+			log.Printf("WARN: kayvee logger reserves '%s' from being set as context", k)
+			continue
+		}
 		context[k] = v
 	}
 
