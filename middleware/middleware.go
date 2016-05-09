@@ -1,9 +1,10 @@
-package kayvee
+package middleware
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"gopkg.in/Clever/kayvee-go.v3/logger"
 )
 
 var defaultHandler = func(req *http.Request) map[string]interface{} {
@@ -17,9 +18,9 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 
 // A LogHandler is an http.Handler that logs customizable data about every request.
 type LogHandler struct {
-	source   string
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
+	logger   *logger.Logger
 }
 
 func (l *LogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -40,7 +41,12 @@ func (l *LogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		"via":           "kayvee-middleware",
 	})
 
-	log.Println(FormatLog(l.source, logLevelFromStatus(lrw.status), "request-finished", data))
+	switch logLevelFromStatus(lrw.status) {
+	case logger.Error:
+		l.logger.ErrorD("request-finished", data)
+	default:
+		l.logger.InfoD("request-finished", data)
+	}
 }
 
 func (l *LogHandler) applyHandlers(req *http.Request, finalizer map[string]interface{}) map[string]interface{} {
@@ -61,11 +67,11 @@ func (l *LogHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 	return result
 }
 
-// NewLogHandler takes in an http Handler to wrap with logging, the source of that logging, and any
-// amount of optional handlers to customize the data that's logged.
-func NewLogHandler(h http.Handler, source string, handlers ...func(*http.Request) map[string]interface{}) *LogHandler {
+// NewLogHandler takes in an http Handler to wrap with logging, the logger to use, and any amount of
+// optional handlers to customize the data that's logged.
+func NewLogHandler(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) map[string]interface{}) *LogHandler {
 	return &LogHandler{
-		source:   source,
+		logger:   logger,
 		handlers: handlers,
 		h:        h,
 	}
@@ -112,9 +118,9 @@ func getIP(req *http.Request) string {
 	return req.RemoteAddr
 }
 
-func logLevelFromStatus(status int) LogLevel {
+func logLevelFromStatus(status int) logger.LogLevel {
 	if status >= 499 {
-		return Error
+		return logger.Error
 	}
-	return Info
+	return logger.Info
 }

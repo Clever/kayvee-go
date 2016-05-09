@@ -236,6 +236,9 @@ func NewWithContext(source string, contextValues map[string]interface{}) *Logger
 		}
 		context[k] = v
 	}
+	if os.Getenv("_DEPLOY_ENV") != "" {
+		context["deploy_env"] = os.Getenv("_DEPLOY_ENV")
+	}
 
 	logObj := Logger{
 		globals: context,
