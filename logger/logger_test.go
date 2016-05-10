@@ -27,6 +27,8 @@ func compareJSONStrings(t *testing.T, expected string, actual string) {
 		panic(fmt.Sprint("failed to json unmarshal `expected`:", expected))
 	}
 
+	expectedJSON["deploy_env"] = "testing"
+
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 

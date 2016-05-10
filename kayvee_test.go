@@ -35,6 +35,8 @@ func compareJSONStrings(t *testing.T, expected string, actual string) {
 		t.Fatalf("failed to json unmarshal `expected`: %s", expected)
 	}
 
+	expectedJSON["deploy_env"] = "testing"
+
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 

@@ -40,8 +40,6 @@ func TestMiddleware(t *testing.T) {
 				w.Write(make([]byte, 10, 10))
 				w.Write(make([]byte, 5, 5))
 			},
-			expectedSize:   10,
-			expectedStatus: 200,
 			// Only the logs that vary based on the handler, the rest are tested in the test runner
 			expectedLog: map[string]interface{}{
 				"level": "info",
@@ -87,6 +85,7 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["via"] = "kayvee-middleware"
 		test.expectedLog["params"] = "key=val&key2=val2"
 		test.expectedLog["source"] = "my-source"
+		test.expectedLog["deploy_env"] = "testing"
 
 		assert.Equal(test.expectedLog, result)
 	}
