@@ -6,6 +6,14 @@ import (
 	"os"
 )
 
+var deployEnv string
+
+func init() {
+	if os.Getenv("_DEPLOY_ENV") != "" {
+		deployEnv = os.Getenv("_DEPLOY_ENV")
+	}
+}
+
 // Log Levels:
 
 // LogLevel denotes the level of a logging
@@ -28,8 +36,8 @@ const (
 
 // Format converts a map to a string of space-delimited key=val pairs
 func Format(data map[string]interface{}) string {
-	if os.Getenv("_DEPLOY_ENV") != "" {
-		data["deploy_env"] = os.Getenv("_DEPLOY_ENV")
+	if deployEnv != "" {
+		data["deploy_env"] = deployEnv
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)
