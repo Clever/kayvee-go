@@ -1,3 +1,12 @@
+/*
+Package middleware provides a customizable Kayvee logging middleware for HTTP servers.
+
+	logHandler := New(myHandler, myLogger, func(req *http.Request) map[string]interface{} {
+		// Add Gorilla mux vars to the log, just because
+		return mux.Vays(req)
+	})
+
+*/
 package middleware
 
 import (
