@@ -35,7 +35,7 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 
 	lrw := &loggedResponseWriter{
-		status:         -1,
+		status:         200,
 		ResponseWriter: w,
 		length:         0,
 	}
@@ -110,9 +110,6 @@ func (w *loggedResponseWriter) WriteHeader(code int) {
 }
 
 func (w *loggedResponseWriter) Write(b []byte) (int, error) {
-	if w.status == -1 {
-		w.status = 200
-	}
 	n, err := w.ResponseWriter.Write(b)
 	w.length += n
 	return n, err
