@@ -48,6 +48,25 @@ func TestMiddleware(t *testing.T) {
 				"status-code":   200.0,
 			},
 		},
+		{
+			// Empty handler is totally valid and should send back 200 with a response size of 0
+			handler: func(w http.ResponseWriter, r *http.Request) {},
+			expectedLog: map[string]interface{}{
+				"level":         "info",
+				"response-size": 0.0,
+				"status-code":   200.0,
+			},
+		},
+		{
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(500)
+			},
+			expectedLog: map[string]interface{}{
+				"level":         "error",
+				"response-size": 0.0,
+				"status-code":   500.0,
+			},
+		},
 	}
 	for _, test := range tests {
 		lggr := logger.New("my-source")
