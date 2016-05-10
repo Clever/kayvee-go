@@ -16,14 +16,13 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 	}
 }
 
-// A LogHandler is an http.Handler that logs customizable data about every request.
-type LogHandler struct {
+type logHandler struct {
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
 	logger   *logger.Logger
 }
 
-func (l *LogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 
 	lrw := &loggedResponseWriter{
@@ -49,7 +48,7 @@ func (l *LogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (l *LogHandler) applyHandlers(req *http.Request, finalizer map[string]interface{}) map[string]interface{} {
+func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]interface{}) map[string]interface{} {
 	result := map[string]interface{}{}
 	writeData := func(data map[string]interface{}) {
 		for key, val := range data {
@@ -67,10 +66,10 @@ func (l *LogHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 	return result
 }
 
-// NewLogHandler takes in an http Handler to wrap with logging, the logger to use, and any amount of
+// New takes in an http Handler to wrap with logging, the logger to use, and any amount of
 // optional handlers to customize the data that's logged.
-func NewLogHandler(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) map[string]interface{}) *LogHandler {
-	return &LogHandler{
+func New(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
+	return &logHandler{
 		logger:   logger,
 		handlers: handlers,
 		h:        h,
