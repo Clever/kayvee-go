@@ -33,7 +33,7 @@ with a "json" format.
         myLogger.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
 
         // Output structured data
-        myLogger.InfoD("DataResults", map[string]interface{}{"key": "value"})
+        myLogger.InfoD("DataResults", logger.M{"key": "value"})
 
         // You can use the M alias for your key value pairs
         myLogger.InfoD("DataResults", logger.M{"shorter": "line"})
