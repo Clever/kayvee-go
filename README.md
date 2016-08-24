@@ -47,6 +47,10 @@ Run `make test` to execute the tests
 
 ## Change log
 
+- v4.0
+  - Added methods to read and write the `Logger` object from a a `context.Context` object.
+  - Middleware now injects the logger into the request context.
+  - Updated to require Go 1.7.
 - v3.0 - Removed sentry-go dependency
 - v2.4 - Add kayvee-go/validator for asserting that raw log lines are in a valid kayvee format.
 - v2.3 - Expose logger.M.
@@ -57,4 +61,3 @@ Run `make test` to execute the tests
 ## Backward Compatibility
 
 The kayvee 1.x interface still exist but is considered deprecated. You can find documentation on using it in the [compatibility guide](./compatibility.md)
-

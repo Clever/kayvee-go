@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -107,5 +108,39 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["deploy_env"] = "testing"
 
 		assert.Equal(test.expectedLog, result)
+	}
+}
+
+func TestMiddlewareIsAddedToContext(t *testing.T) {
+	assert := assert.New(t)
+	lggr := logger.New("my-source")
+
+	out := &bytes.Buffer{}
+	lggr.SetConfig("my-source", logger.Info, kv.Format, out)
+	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.FromContext(r.Context()).Info("logging with context!")
+		w.WriteHeader(200)
+	}), lggr)
+
+	rw := &bufferWriter{}
+	handler.ServeHTTP(rw, &http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Host:     "trollhost.com",
+			Path:     "path",
+			RawQuery: "key=val&key2=val2",
+		},
+		Header: http.Header{"X-Forwarded-For": {"192.168.0.1"}},
+	})
+
+	logLines := strings.Split(out.String(), "\n")
+	if len(logLines) != 3 /* one extra blank "line" from trailing newline */ {
+		t.Fatalf("expected 2 logs, got %d: %#v", len(logLines)-1, logLines)
+	}
+	var result map[string]interface{}
+	assert.Nil(json.NewDecoder(strings.NewReader(logLines[0])).Decode(&result))
+
+	if result["title"].(string) != "logging with context!" {
+		t.Fatalf("invalid log title %s", result["title"])
 	}
 }
