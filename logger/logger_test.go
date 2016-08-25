@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	kv "gopkg.in/Clever/kayvee-go.v3"
+	kv "gopkg.in/Clever/kayvee-go.v4"
 )
 
 type keyVal map[string]interface{}

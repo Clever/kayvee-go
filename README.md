@@ -1,14 +1,14 @@
 # kayvee
 --
-    import "gopkg.in/Clever/kayvee-go.v3"
+    import "gopkg.in/Clever/kayvee-go.v4"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [gopkg.in/Clever/kayvee-go.v3/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v3/logger)
-* [gopkg.in/Clever/kayvee-go.v3/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v3/middleware)
+* [gopkg.in/Clever/kayvee-go.v4/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v4/logger)
+* [gopkg.in/Clever/kayvee-go.v4/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v4/middleware)
 
 ## Example
 
@@ -19,7 +19,7 @@ with a "json" format.
         "fmt"
         "time"
 
-        "gopkg.in/Clever/kayvee-go.v3/logger"
+        "gopkg.in/Clever/kayvee-go.v4/logger"
     )
 
     func main() {
@@ -51,7 +51,7 @@ Run `make test` to execute the tests
   - Added methods to read and write the `Logger` object from a a `context.Context` object.
   - Middleware now injects the logger into the request context.
   - Updated to require Go 1.7.
-- v3.0 - Removed sentry-go dependency
+- v4.0 - Removed sentry-go dependency
 - v2.4 - Add kayvee-go/validator for asserting that raw log lines are in a valid kayvee format.
 - v2.3 - Expose logger.M.
 - v2.2 - Remove godeps.
