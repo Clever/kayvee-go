@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"time"
 
-	"gopkg.in/Clever/kayvee-go.v3/logger"
+	"gopkg.in/Clever/kayvee-go.v4/logger"
 )
 
 var defaultHandler = func(req *http.Request) map[string]interface{} {
@@ -33,6 +33,9 @@ type logHandler struct {
 
 func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
+
+	// inject the logger into req.Context
+	req = req.WithContext(logger.NewContext(req.Context(), l.logger))
 
 	lrw := &loggedResponseWriter{
 		status:         200,
