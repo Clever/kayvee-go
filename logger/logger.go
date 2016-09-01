@@ -89,6 +89,11 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
+// AddContext adds a new key-val to be logged with all log messages.
+func (l *Logger) AddContext(key, val string) {
+	l.globals[key] = val
+}
+
 // SetLogLevel sets the default log level threshold
 func (l *Logger) SetLogLevel(logLvl LogLevel) {
 	l.logLvl = logLvl
