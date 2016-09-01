@@ -209,3 +209,17 @@ func TestMultipleLoggers(t *testing.T) {
 	logger2.Info("testloginfo")
 	assert.NotEqual(t, logOutput1, string(buf1.Bytes()))
 }
+
+func TestAddContext(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+	logger.Info("1")
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()),
+		kv.FormatLog("logger-tester", kv.Info, "1", M{}))
+	buf.Reset()
+	logger.AddContext("a", "b")
+	logger.Info("2")
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()),
+		kv.FormatLog("logger-tester", kv.Info, "2", M{"a": "b"}))
+}
