@@ -11,6 +11,7 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"gopkg.in/Clever/kayvee-go.v4/logger"
@@ -29,6 +30,7 @@ type logHandler struct {
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
 	logger   *logger.Logger
+	isCanary bool
 }
 
 func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -50,6 +52,7 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		"response-size": lrw.length,
 		"status-code":   lrw.status,
 		"via":           "kayvee-middleware",
+		"canary":        l.isCanary,
 	})
 
 	switch logLevelFromStatus(lrw.status) {
@@ -81,10 +84,17 @@ func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 // New takes in an http Handler to wrap with logging, the logger to use, and any amount of
 // optional handlers to customize the data that's logged.
 func New(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
+	isCanary := false
+
+	canaryFlag := os.Getenv("_CANARY")
+	if canaryFlag == "1" {
+		isCanary = true
+	}
 	return &logHandler{
 		logger:   logger,
 		handlers: handlers,
 		h:        h,
+		isCanary: isCanary,
 	}
 }
 

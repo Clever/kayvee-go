@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -106,9 +107,39 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["params"] = "key=val&key2=val2"
 		test.expectedLog["source"] = "my-source"
 		test.expectedLog["deploy_env"] = "testing"
-
+		test.expectedLog["canary"] = false
 		assert.Equal(test.expectedLog, result)
 	}
+}
+
+func TestMiddlewareCanaryFlag(t *testing.T) {
+	os.Setenv("_CANARY", "1")
+	defer os.Unsetenv("_CANARY")
+
+	assert := assert.New(t)
+	lggr := logger.New("my-source")
+
+	out := &bytes.Buffer{}
+	lggr.SetConfig("my-source", logger.Info, kv.Format, out)
+
+	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), lggr)
+
+	rw := &bufferWriter{}
+	handler.ServeHTTP(rw, &http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Host: "trollhost.com",
+			Path: "path",
+		},
+	})
+
+	var result map[string]interface{}
+	assert.Nil(json.NewDecoder(out).Decode(&result))
+
+	log.Printf("%#v", result)
+
+	assert.Equal(true, result["canary"])
+
 }
 
 func TestMiddlewareIsAddedToContext(t *testing.T) {
