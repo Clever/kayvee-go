@@ -29,15 +29,16 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 type logHandler struct {
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
-	logger   *logger.Logger
 	isCanary bool
+	source   string
 }
 
 func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 
-	// inject the logger into req.Context
-	req = req.WithContext(logger.NewContext(req.Context(), l.logger))
+	// create and inject a logger into req.Context
+	lggr := logger.New(l.source)
+	req = req.WithContext(logger.NewContext(req.Context(), lggr))
 
 	lrw := &loggedResponseWriter{
 		status:         200,
@@ -57,9 +58,9 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	switch logLevelFromStatus(lrw.status) {
 	case logger.Error:
-		l.logger.ErrorD("request-finished", data)
+		lggr.ErrorD("request-finished", data)
 	default:
-		l.logger.InfoD("request-finished", data)
+		lggr.InfoD("request-finished", data)
 	}
 }
 
@@ -81,9 +82,10 @@ func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 	return result
 }
 
-// New takes in an http Handler to wrap with logging, the logger to use, and any amount of
+// New takes in an http Handler to wrap with logging, the logger source name to use, and any amount of
 // optional handlers to customize the data that's logged.
-func New(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
+// On every request, the middleware will create a logger and place it in req.Context().
+func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
 	isCanary := false
 
 	canaryFlag := os.Getenv("_CANARY")
@@ -91,10 +93,10 @@ func New(h http.Handler, logger *logger.Logger, handlers ...func(*http.Request) 
 		isCanary = true
 	}
 	return &logHandler{
-		logger:   logger,
 		handlers: handlers,
 		h:        h,
 		isCanary: isCanary,
+		source:   source,
 	}
 }
 
