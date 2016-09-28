@@ -1,6 +1,6 @@
 # logger
 --
-    import "gopkg.in/Clever/kayvee-go.v4/logger"
+    import "gopkg.in/Clever/kayvee-go.v5/logger"
 
 
 ## Usage

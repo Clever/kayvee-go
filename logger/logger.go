@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	kv "gopkg.in/Clever/kayvee-go.v4"
+	kv "gopkg.in/Clever/kayvee-go.v5"
 )
 
 /////////////////////

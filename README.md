@@ -1,14 +1,14 @@
 # kayvee
 --
-    import "gopkg.in/Clever/kayvee-go.v4"
+    import "gopkg.in/Clever/kayvee-go.v5"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [gopkg.in/Clever/kayvee-go.v4/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v4/logger)
-* [gopkg.in/Clever/kayvee-go.v4/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v4/middleware)
+* [gopkg.in/Clever/kayvee-go.v5/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/logger)
+* [gopkg.in/Clever/kayvee-go.v5/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/middleware)
 
 ## Example
 
@@ -19,7 +19,7 @@ with a "json" format.
         "fmt"
         "time"
 
-        "gopkg.in/Clever/kayvee-go.v4/logger"
+        "gopkg.in/Clever/kayvee-go.v5/logger"
     )
 
     func main() {
@@ -47,6 +47,8 @@ Run `make test` to execute the tests
 
 ## Change log
 
+- v5.0 - Middleware logger now creates a new logger on each request.
+  - Breaking change to `middleware.New` constructor.
 - v4.0
   - Added methods to read and write the `Logger` object from a a `context.Context` object.
   - Middleware now injects the logger into the request context.
