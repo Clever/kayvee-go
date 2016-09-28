@@ -71,12 +71,13 @@ func TestMiddleware(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		lggr := logger.New("my-source")
-
 		out := &bytes.Buffer{}
-		lggr.SetConfig("my-source", logger.Info, kv.Format, out)
-
-		handler := New(http.HandlerFunc(test.handler), lggr)
+		wrappedHandler := func(w http.ResponseWriter, r *http.Request) {
+			// inject buffer to capture logs
+			logger.FromContext(r.Context()).SetConfig("my-source", logger.Info, kv.Format, out)
+			test.handler(w, r)
+		}
+		handler := New(http.HandlerFunc(wrappedHandler), "my-source")
 		rw := &bufferWriter{}
 		handler.ServeHTTP(rw, &http.Request{
 			Method: "GET",
@@ -117,12 +118,12 @@ func TestMiddlewareCanaryFlag(t *testing.T) {
 	defer os.Unsetenv("_CANARY")
 
 	assert := assert.New(t)
-	lggr := logger.New("my-source")
 
 	out := &bytes.Buffer{}
-	lggr.SetConfig("my-source", logger.Info, kv.Format, out)
 
-	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), lggr)
+	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.FromContext(r.Context()).SetConfig("my-source", logger.Info, kv.Format, out)
+	}), "my-source")
 
 	rw := &bufferWriter{}
 	handler.ServeHTTP(rw, &http.Request{
@@ -144,14 +145,13 @@ func TestMiddlewareCanaryFlag(t *testing.T) {
 
 func TestMiddlewareIsAddedToContext(t *testing.T) {
 	assert := assert.New(t)
-	lggr := logger.New("my-source")
 
 	out := &bytes.Buffer{}
-	lggr.SetConfig("my-source", logger.Info, kv.Format, out)
 	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.FromContext(r.Context()).SetConfig("my-source", logger.Info, kv.Format, out)
 		logger.FromContext(r.Context()).Info("logging with context!")
 		w.WriteHeader(200)
-	}), lggr)
+	}), "my-source")
 
 	rw := &bufferWriter{}
 	handler.ServeHTTP(rw, &http.Request{
