@@ -25,15 +25,20 @@ func init() {
 	}
 }
 
-// Router is an object that can route log lines according to `rules`.
-type Router struct {
+// Router is an an interface for an object that can route log lines.
+type Router interface {
+	Route(map[string]interface{}) map[string]interface{}
+}
+
+// RuleRouter is an object that can route log lines according to `rules`.
+type RuleRouter struct {
 	rules []Rule
 }
 
 // Route returns routing metadata for the log line `msg`. The outputs (with
 // variable substitutions performed) for each rule matched are placed under the
 // "routes" key.
-func (r Router) Route(msg map[string]interface{}) map[string]interface{} {
+func (r RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	outputs := []map[string]interface{}{}
 	for _, rule := range r.rules {
 		if rule.Matches(msg) {
@@ -51,7 +56,7 @@ func (r Router) Route(msg map[string]interface{}) map[string]interface{} {
 // NewFromRoutes constructs a Router using the provided rules. No validation is
 // performed on the rules.
 func NewFromRoutes(routes []Rule) Router {
-	return Router{routes}
+	return RuleRouter{routes}
 }
 
 // NewFromConfig constructs a Router using the configuration specified as yaml
@@ -61,22 +66,29 @@ func NewFromRoutes(routes []Rule) Router {
 func NewFromConfig(filename string) (Router, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return Router{}, err
+		return nil, err
 	}
 	fileBytes, err := ioutil.ReadAll(file)
 	file.Close()
-
-	var config struct {
-		Routes map[string]Rule
-	}
-	err = yaml.Unmarshal(fileBytes, &config)
+	router, err := newFromConfigBytes(fileBytes)
 	if err != nil {
-		return Router{}, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Error initializing kayvee log router from file '%s':\n%s",
 			filename, err.Error(),
 		)
 	}
-	router := Router{}
+	return router, nil
+}
+
+func newFromConfigBytes(fileBytes []byte) (Router, error) {
+	var config struct {
+		Routes map[string]Rule
+	}
+	err := yaml.Unmarshal(fileBytes, &config)
+	if err != nil {
+		return nil, err
+	}
+	router := RuleRouter{}
 	for name, rule := range config.Routes {
 		rule.Name = name
 		router.rules = append(router.rules, rule)

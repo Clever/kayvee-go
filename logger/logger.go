@@ -78,7 +78,7 @@ type Logger struct {
 	logLvl    LogLevel
 	formatter Formatter
 	logWriter *log.Logger
-	logRouter *router.Router
+	logRouter router.Router
 }
 
 // SetConfig allows configuration changes in one go
@@ -240,7 +240,7 @@ func (l *Logger) WithRoutingConfig(filename string) (*Logger, error) {
 	if err != nil {
 		return l, err
 	}
-	l.logRouter = &routes
+	l.logRouter = routes
 	return l, nil
 }
 
