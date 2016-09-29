@@ -53,12 +53,6 @@ func (r RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	}
 }
 
-// NewFromRoutes constructs a Router using the provided rules. No validation is
-// performed on the rules.
-func NewFromRoutes(routes []Rule) Router {
-	return RuleRouter{routes}
-}
-
 // NewFromConfig constructs a Router using the configuration specified as yaml
 // in `filename`. The routing rules should be placed under the "routes" key on
 // the root-level map in the file. Validation is performed as described in
@@ -80,13 +74,13 @@ func NewFromConfig(filename string) (Router, error) {
 	return router, nil
 }
 
-func newFromConfigBytes(fileBytes []byte) (Router, error) {
+func newFromConfigBytes(fileBytes []byte) (RuleRouter, error) {
 	var config struct {
 		Routes map[string]Rule
 	}
 	err := yaml.Unmarshal(fileBytes, &config)
 	if err != nil {
-		return nil, err
+		return RuleRouter{}, err
 	}
 	router := RuleRouter{}
 	for name, rule := range config.Routes {
