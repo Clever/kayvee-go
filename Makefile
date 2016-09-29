@@ -24,7 +24,7 @@ endef
 bump-major:
 	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1+1 "." $$2 "." $$3}'))
 	$(eval MAJOR_VERS := $(firstword $(subst ., ,$(VERS))))
-	@find . -name '*.go' -exec sed -i 's/gopkg\.in\/Clever\/kayvee-go\.v[[:digit:]]\+/gopkg\.in\/Clever\/kayvee-go\.v$(MAJOR_VERS)/' {} \;
+	@find . -exec sed -i 's/gopkg\.in\/Clever\/kayvee-go\.v[[:digit:]]\+/gopkg\.in\/Clever\/kayvee-go\.v$(MAJOR_VERS)/' {} \;
 	$(call set-version)
 
 bump-minor:
