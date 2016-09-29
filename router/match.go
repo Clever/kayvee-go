@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -23,11 +22,8 @@ func (r *Rule) Matches(msg map[string]interface{}) bool {
 // message.
 func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
 	kvSubber := func(key string) string {
-		if v, ok := msg[key]; ok {
-			if str, ok := v.(string); ok {
-				return str
-			}
-			return "INVALID_VALUE"
+		if v, ok := lookupString(key, msg); ok {
+			return v
 		}
 		return "KEY_NOT_FOUND"
 	}
@@ -38,29 +34,45 @@ func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
 	return finalSubbed
 }
 
+// lookupString does an extended lookup on `obj`, interpreting dots in field as
+// corresponding to subobjects. It returns the value and true if the lookup
+// succeeded or `"", false` if the key is missing or corresponds to a
+// non-string value.
+func lookupString(field string, obj map[string]interface{}) (string, bool) {
+	path := strings.Split(field, ".")
+	if len(path) == 0 {
+		// `field` is the empty string
+		val, ok := obj[field].(string)
+		return val, ok
+	}
+	return lookupStringPath(path, obj)
+}
+
+// lookupStringPath does an extended lookup on `obj`, with each entry in `fieldPath`
+// corresponding to subobjects. It returns the value and true if the lookup
+// succeeded or `"", false` if a key was missing along the path or if the final
+// key corresponds to a non-string value.
+func lookupStringPath(fieldPath []string, obj map[string]interface{}) (string, bool) {
+	if len(fieldPath) == 1 {
+		val, ok := obj[fieldPath[0]].(string)
+		return val, ok
+	}
+	if subObj, ok := obj[fieldPath[0]].(map[string]interface{}); ok {
+		return lookupStringPath(fieldPath[1:], subObj)
+	}
+	return "", false
+}
+
 // fieldMatches returns true if the value of the key `field` in the map `obj`
 // is one of `values`. Dots in `field` are interpreted as denoting subobjects
 // -- i.e. the field name "x.y.z" says to check obj["x"]["y"]["z"].
-func fieldMatches(field string, values []string, obj map[string]interface{}) bool {
-	if field == "" {
-		panic(fmt.Errorf("Invalid field specified"))
-	}
-
-	if strings.ContainsRune(field, '.') {
-		fieldPath := strings.Split(field, ".")
-		if subObj, ok := obj[fieldPath[0]].(map[string]interface{}); ok {
-			return fieldMatches(strings.Join(fieldPath[1:], "."), values, subObj)
-		}
-		// No subobject
-		return false
-	}
-
-	objVal, ok := obj[field]
+func fieldMatches(field string, valueMatchers []string, obj map[string]interface{}) bool {
+	val, ok := lookupString(field, obj)
 	if !ok {
 		return false
 	}
-	for _, v := range values {
-		if objVal == v {
+	for _, match := range valueMatchers {
+		if val == match {
 			return true
 		}
 	}
