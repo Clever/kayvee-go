@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	kv "gopkg.in/Clever/kayvee-go.v5"
+	"gopkg.in/Clever/kayvee-go.v5/router"
 )
 
 /////////////////////
@@ -38,6 +39,7 @@ var reservedKeyNames = map[string]bool{
 	"source": true,
 	"value":  true,
 	"type":   true,
+	"_meta":  true,
 }
 
 var logLevelNames = map[LogLevel]string{
@@ -76,6 +78,7 @@ type Logger struct {
 	logLvl    LogLevel
 	formatter Formatter
 	logWriter *log.Logger
+	logRouter *router.Router
 }
 
 // SetConfig allows configuration changes in one go
@@ -221,9 +224,24 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		}
 		data[key] = value
 	}
+	if l.logRouter != nil {
+		data["_meta"] = l.logRouter.Route(data)
+	}
 
 	logString := l.formatter(data)
 	l.logWriter.Println(logString)
+}
+
+// WithRoutingConfig installs a new log router onto the Logger with the
+// configuration specified in `filename`. For convenience, the Logger returns
+// itself as the first return value.
+func (l *Logger) WithRoutingConfig(filename string) (*Logger, error) {
+	routes, err := router.NewFromConfig(filename)
+	if err != nil {
+		return l, err
+	}
+	l.logRouter = &routes
+	return l, nil
 }
 
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
