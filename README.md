@@ -63,3 +63,9 @@ Run `make test` to execute the tests
 ## Backward Compatibility
 
 The kayvee 1.x interface still exist but is considered deprecated. You can find documentation on using it in the [compatibility guide](./compatibility.md)
+
+## Publishing
+
+To release a new version run `make bump-major`, `make bump-minor`, or `make
+bump-patch` as appropriate on master (after merging your PR). Then, run `git
+push --tags`.
