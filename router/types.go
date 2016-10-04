@@ -1,5 +1,17 @@
 package router
 
+//go:generate ./generate_schema.sh
+
+// Router is an an interface for an object that can route log lines.
+type Router interface {
+	Route(map[string]interface{}) map[string]interface{}
+}
+
+// RuleRouter is an object that can route log lines according to `rules`.
+type RuleRouter struct {
+	rules []Rule
+}
+
 // RuleMatchers describes which log lines a router rule applies to.
 type RuleMatchers map[string][]string
 
@@ -11,26 +23,4 @@ type Rule struct {
 	Name     string
 	Matchers RuleMatchers
 	Output   RuleOutput
-}
-
-type metricsOutput struct {
-	Series     string
-	Dimensions []string
-}
-
-type alertOutput struct {
-	Series     string
-	Dimensions []string
-	StatType   string `yaml:"stat_type"`
-}
-
-type analyticsOutput struct {
-	Series string
-}
-
-type notificationOutput struct {
-	Channel string
-	Icon    string
-	Message string
-	User    string
 }

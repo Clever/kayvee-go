@@ -1,187 +1,98 @@
 package router
 
 import (
+	"errors"
 	"fmt"
-	"reflect"
+	"os"
 	"strings"
 
-	"github.com/Clever/go-utils/stringset"
+	"github.com/xeipuuv/gojsonschema"
 )
 
-// UnmarshalYAML unmarshals the `matchers` section of a log-routing
-// configuration. It ensures that this section is a map from strings to either
-// a single string or a list of strings and that:
-// - Keys and values contain no special characters -- $, %, {, or } -- and
-//   hence no substitutions
-// - If value is a list, there are no repeated elements
-func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var data map[string]interface{}
+func validate(schemaLoader, docLoader gojsonschema.JSONLoader) error {
+	result, err := gojsonschema.Validate(schemaLoader, docLoader)
+	if err != nil {
+		return err
+	}
+	if !result.Valid() {
+		errStrings := make([]string, len(result.Errors()))
+		for idx, err := range result.Errors() {
+			errStrings[idx] = fmt.Sprintf("\t%s: %s", err, err.Value())
+		}
+		return errors.New(strings.Join(errStrings, "\n"))
+	}
+	return nil
+}
 
-	err := unmarshal(&data)
+// UnmarshalYAML unmarshals the `matchers` section of a log-routing
+// configuration and validates it.
+func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var rawData map[string]interface{}
+	err := unmarshal(&rawData)
 	if err != nil {
 		return err
 	}
 
-	*m = RuleMatchers(make(map[string][]string))
-
-	for field, value := range data {
-		err := ensureNoSpecials(field)
-		if err != nil {
-			return fmt.Errorf("Invalid matcher field name '%s': %s", field, err.Error())
-		}
-
-		typeErr := fmt.Errorf("Invalid type for matcher value on field '%s': %+v.\n\tShould be string or slice of strings.", field, value)
-		switch value := value.(type) {
-		case string:
-			err := ensureNoSpecials(value)
-			if err != nil {
-				return fmt.Errorf("Invalid matcher value '%s' on field '%s': %s",
-					value, field, err.Error())
-			}
-			(*m)[field] = []string{value}
-		case []interface{}:
-			strValue := make([]string, len(value))
-			for i, v := range value {
-				if str, ok := v.(string); ok {
-					err := ensureNoSpecials(str)
-					if err != nil {
-						return fmt.Errorf("Invalid matcher value '%s' on field '%s': %s",
-							str, field, err.Error())
-					}
-					strValue[i] = str
-				} else {
-					return typeErr
-				}
-			}
-			err := ensureNoRepeats(strValue)
-			if err != nil {
-				return fmt.Errorf("Invalid matcher value on field '%s': %s", field, err.Error())
-			}
-			(*m)[field] = strValue
-		default:
-			return typeErr
-		}
+	schemaLoader := gojsonschema.NewStringLoader(matchersSchema)
+	docLoader := gojsonschema.NewGoLoader(&rawData)
+	err = validate(schemaLoader, docLoader)
+	if err != nil {
+		return err
 	}
 
+	var data map[string][]string
+	err = unmarshal(&data)
+	if err != nil {
+		return err
+	}
+	*m = data
 	return nil
 }
 
 // UnmarshalYAML unmarshals the `output` section of a log-routing
-// configuration. It ultimately just unmarshals into a map[string]interface{}
-// but before doing so it uses the WhateverOutput structs defined in rule.go to
-// validate the format are correct for whatever type of output is specified.
+// configuration. It also validates against the schema.
 func (o *RuleOutput) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var obj struct {
-		Type string
-	}
-	err := unmarshal(&obj)
+	var rawData map[string]interface{}
+	err := unmarshal(&rawData)
 	if err != nil {
 		return err
 	}
+	outputType, ok := rawData["type"].(string)
+	if !ok {
+		return fmt.Errorf("Output missing type")
+	}
 
-	switch obj.Type {
+	var schema string
+	switch outputType {
 	case "metrics":
-		var metrics metricsOutput
-		err := validateStrict(&metrics, unmarshal)
-		if err != nil {
-			return err
-		}
+		schema = metricsSchema
 	case "alert":
-		var alert alertOutput
-		err := validateStrict(&alert, unmarshal)
-		if err != nil {
-			return err
-		}
+		schema = alertSchema
 	case "analytics":
-		var analytics analyticsOutput
-		err := validateStrict(&analytics, unmarshal)
-		if err != nil {
-			return err
-		}
+		schema = analyticsSchema
 	case "notification":
-		var notification notificationOutput
-		err := validateStrict(&notification, unmarshal)
-		if err != nil {
-			return err
-		}
+		schema = notificationSchema
 	default:
-		return fmt.Errorf("Unknown output type: %s", obj.Type)
+		return fmt.Errorf("\tOuput type not valid: %s", outputType)
 	}
-
-	var result map[string]interface{}
-	err = unmarshal(&result)
-	*o = result
-	return err
-}
-
-// ensureNoSpecials returns an error iff s contains a special character
-func ensureNoSpecials(s string) error {
-	specials := []rune{'$', '%', '{', '}'}
-	for _, r := range specials {
-		if strings.ContainsRune(s, r) {
-			return fmt.Errorf("Contains illegal character: '%c'\n"+
-				"\tThe characters '$', '%%', '{', and '}' aren't allowed here.", r)
-		}
-	}
-	return nil
-}
-
-// ensureNoRepeats returns an error iff list contains the same string two or
-// more times
-func ensureNoRepeats(list []string) error {
-	s := stringset.FromList(list)
-	if len(s) < len(list) {
-		return fmt.Errorf("List %v contains repeated elements.", list)
-	}
-	return nil
-}
-
-// yamlName returns the name of the provided struct field that the yaml parser
-// will use. This is what is specified in the struct tag if provided, or just
-// the field name lowercased.
-func yamlName(f reflect.StructField) string {
-	tagElems := strings.Split(f.Tag.Get("yaml"), ",")
-	if len(tagElems) > 0 && tagElems[0] != "" {
-		return tagElems[0]
-	}
-	return strings.ToLower(f.Name)
-}
-
-// validateStrict ensures that the following is true of the yaml behind the
-// `unmarshal` function:
-// - The types are set in accordance with format
-// - All keys are explicitly set
-// - No extra keys are set
-func validateStrict(format interface{}, unmarshal func(interface{}) error) error {
-	// Validate types are correct
-	err := unmarshal(format)
+	schemaLoader := gojsonschema.NewStringLoader(schema)
+	docLoader := gojsonschema.NewGoLoader(&rawData)
+	err = validate(schemaLoader, docLoader)
 	if err != nil {
 		return err
 	}
 
-	var raw struct {
-		Type string
-		Data map[string]interface{} `yaml:",inline"`
-	}
-	err = unmarshal(&raw)
-	if err != nil {
-		return err
-	}
-
-	// Validate all fields explicitly set
-	ft := reflect.TypeOf(format).Elem()
-	for i := 0; i < ft.NumField(); i++ {
-		field := ft.Field(i)
-		name := yamlName(field)
-		if _, ok := raw.Data[name]; !ok {
-			return fmt.Errorf("Output type '%s' missing key: %s", raw.Type, name)
+	envErrors := []string{}
+	getEnvOrErr := func(key string) string {
+		val := os.Getenv(key)
+		if val == "" {
+			envErrors = append(envErrors, fmt.Sprintf("\tEnvironment variable '%s' not set", key))
 		}
-		delete(raw.Data, name)
+		return val
 	}
-
-	// Validate no extra fields set
-	if len(raw.Data) != 0 {
-		return fmt.Errorf("Output type '%s' contains unknown keys: %+v", raw.Type, raw.Data)
+	*o = substitute(rawData, `\$`, getEnvOrErr)
+	if len(envErrors) > 0 {
+		return errors.New(strings.Join(envErrors, "\n"))
 	}
 
 	return nil

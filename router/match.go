@@ -1,7 +1,6 @@
 package router
 
 import (
-	"os"
 	"regexp"
 	"strings"
 )
@@ -28,10 +27,9 @@ func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
 		return "KEY_NOT_FOUND"
 	}
 
-	kvSubbed := substitute(r.Output, "%", kvSubber)
-	finalSubbed := substitute(kvSubbed, `\$`, os.Getenv)
-	finalSubbed["rule"] = r.Name
-	return finalSubbed
+	subbed := substitute(r.Output, "%", kvSubber)
+	subbed["rule"] = r.Name
+	return subbed
 }
 
 // lookupString does an extended lookup on `obj`, interpreting dots in field as

@@ -25,16 +25,6 @@ func init() {
 	}
 }
 
-// Router is an an interface for an object that can route log lines.
-type Router interface {
-	Route(map[string]interface{}) map[string]interface{}
-}
-
-// RuleRouter is an object that can route log lines according to `rules`.
-type RuleRouter struct {
-	rules []Rule
-}
-
 // Route returns routing metadata for the log line `msg`. The outputs (with
 // variable substitutions performed) for each rule matched are placed under the
 // "routes" key.
@@ -46,10 +36,11 @@ func (r RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{
-		"app":        appName,
-		"team":       teamName,
-		"kv_version": kv.Version,
-		"routes":     outputs,
+		"app":         appName,
+		"team":        teamName,
+		"kv_version":  kv.Version,
+		"kv_language": "go",
+		"routes":      outputs,
 	}
 }
 
@@ -78,6 +69,7 @@ func newFromConfigBytes(fileBytes []byte) (RuleRouter, error) {
 	var config struct {
 		Routes map[string]Rule
 	}
+	// Unmarshaling also validates the config
 	err := yaml.Unmarshal(fileBytes, &config)
 	if err != nil {
 		return RuleRouter{}, err

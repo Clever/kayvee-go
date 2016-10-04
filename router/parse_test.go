@@ -27,7 +27,7 @@ func TestParsesWellFormatedConfig(t *testing.T) {
 routes:
   rule-one:
     matchers:
-      title: "authorize-app"
+      title: ["authorize-app"]
     output:
       type: "notification"
       channel: "#team"
@@ -37,7 +37,7 @@ routes:
   rule-two:
     matchers:
       foo.bar: ["multiple", "matches"]
-      baz: "whatever"
+      baz: ["whatever"]
     output:
       type: "alert"
       series: "other-series"
@@ -85,7 +85,7 @@ func TestOnlyStringMatcherValues(t *testing.T) {
 routes:
   non-string-values:
     matchers:
-      no-numbers: %s
+      no-numbers: [%s]
     output:
       type: "analytics"
       series: "fun"
@@ -96,7 +96,7 @@ routes:
 	_, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)
 
-	for _, invalidVal := range []string{"5", "true", "[[], \"wut\"]", "{}"} {
+	for _, invalidVal := range []string{"5", "true", "[]", "{}"} {
 		conf := []byte(fmt.Sprintf(confTmpl, invalidVal))
 		_, err := newFromConfigBytes(conf)
 		assert.Error(t, err)
@@ -108,7 +108,7 @@ func TestNoSpecialsInMatcher(t *testing.T) {
 routes:
   complicated-fields:
     matchers:
-      "%s": "hallo?"
+      "%s": ["hallo?"]
     output:
       type: "analytics"
       series: "fun"
@@ -117,7 +117,7 @@ routes:
 routes:
   complicated-values:
     matchers:
-      title: "%s"
+      title: ["%s"]
     output:
       type: "analytics"
       series: "fun"
@@ -145,17 +145,17 @@ func TestNoDupMatchers(t *testing.T) {
 routes:
   sloppy:
     matchers:
-      title: %s
+      title: [%s]
     output:
       type: "analytics"
       series: "fun"
 `
 
-	validConf := []byte(fmt.Sprintf(confTmpl, `["non-repeated", "name"]`))
+	validConf := []byte(fmt.Sprintf(confTmpl, `"non-repeated", "name"`))
 	_, err := newFromConfigBytes(validConf)
 	assert.Nil(t, err)
 
-	invalidConf := []byte(fmt.Sprintf(confTmpl, `["repeated", "repeated", "name"]`))
+	invalidConf := []byte(fmt.Sprintf(confTmpl, `"repeated", "repeated", "name"`))
 	_, err = newFromConfigBytes(invalidConf)
 	assert.Error(t, err)
 }
@@ -165,7 +165,7 @@ func TestOutputRequiresCorrectTypes(t *testing.T) {
 routes:
   wrong:
     matchers:
-      title: "test"
+      title: ["test"]
     output:
       type: "alert"
       series: %s
@@ -191,7 +191,7 @@ func TestOutputRequiresAllKeys(t *testing.T) {
 routes:
   wrong:
     matchers:
-      title: "test"
+      title: ["test"]
     output:
       type: "alert"%s
       dimensions: ["dim1", "dim2"]
@@ -213,7 +213,7 @@ func TestOutputNoExtraKeysAllowed(t *testing.T) {
 routes:
   wrong:
     matchers:
-      title: "test"
+      title: ["test"]
     output:
       type: "alert"%s
       dimensions: ["dim1", "dim2"]
