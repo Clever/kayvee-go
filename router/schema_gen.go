@@ -3,6 +3,7 @@
 package router
 
 var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
+  "description": "Last modified: 8/4/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
@@ -115,6 +116,7 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
   }
 }}`
 var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
+  "description": "Last modified: 8/4/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
@@ -227,6 +229,7 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
   }
 }}`
 var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
+  "description": "Last modified: 8/4/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
@@ -339,6 +342,7 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
   }
 }}`
 var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": {
+  "description": "Last modified: 8/4/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
@@ -451,6 +455,7 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
   }
 }}`
 var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definitions": {
+  "description": "Last modified: 8/4/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
