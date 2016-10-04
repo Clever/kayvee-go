@@ -35,11 +35,11 @@ const (
 )
 
 var reservedKeyNames = map[string]bool{
-	"title":  true,
-	"source": true,
-	"value":  true,
-	"type":   true,
-	"_meta":  true,
+	"title":   true,
+	"source":  true,
+	"value":   true,
+	"type":    true,
+	"_kvmeta": true,
 }
 
 var logLevelNames = map[LogLevel]string{
@@ -225,7 +225,7 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		data[key] = value
 	}
 	if l.logRouter != nil {
-		data["_meta"] = l.logRouter.Route(data)
+		data["_kvmeta"] = l.logRouter.Route(data)
 	}
 
 	logString := l.formatter(data)
