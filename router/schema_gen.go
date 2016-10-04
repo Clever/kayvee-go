@@ -48,7 +48,7 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
         "type": "string",
         "pattern": "^metrics$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
@@ -61,7 +61,7 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
         "type": "string",
         "pattern": "^alert$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
       "stat_type": {
         "type": "string",
@@ -78,7 +78,7 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
         "type": "string",
         "pattern": "^analytics$"
       },
-      "series": { "$ref": "#/definitions/substValue" }
+      "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "notificationOutput": {
@@ -90,10 +90,10 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
         "type": "string",
         "pattern": "^notification$"
       },
-      "channel": { "$ref": "#/definitions/substValue" },
-      "icon": { "$ref": "#/definitions/substValue" },
+      "channel": { "$ref": "#/definitions/envVarSubstValue" },
+      "icon": { "$ref": "#/definitions/envVarSubstValue" },
       "message": { "$ref": "#/definitions/kvSubstValue" },
-      "user": { "$ref": "#/definitions/substValue" }
+      "user": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "flatValue": {
@@ -106,7 +106,7 @@ var matchersSchema = `{"$ref": "#/definitions/matchers", "definitions": {
     "uniqueItems": true,
     "items": { "$ref": "#/definitions/flatValue" }
   },
-  "substValue": {
+  "envVarSubstValue": {
     "type": "string",
     "pattern": "^([^\\$%{}]|\\${[^%\\${}]+})+$"
   },
@@ -161,7 +161,7 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
         "type": "string",
         "pattern": "^metrics$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
@@ -174,7 +174,7 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
         "type": "string",
         "pattern": "^alert$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
       "stat_type": {
         "type": "string",
@@ -191,7 +191,7 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
         "type": "string",
         "pattern": "^analytics$"
       },
-      "series": { "$ref": "#/definitions/substValue" }
+      "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "notificationOutput": {
@@ -203,10 +203,10 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
         "type": "string",
         "pattern": "^notification$"
       },
-      "channel": { "$ref": "#/definitions/substValue" },
-      "icon": { "$ref": "#/definitions/substValue" },
+      "channel": { "$ref": "#/definitions/envVarSubstValue" },
+      "icon": { "$ref": "#/definitions/envVarSubstValue" },
       "message": { "$ref": "#/definitions/kvSubstValue" },
-      "user": { "$ref": "#/definitions/substValue" }
+      "user": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "flatValue": {
@@ -219,7 +219,7 @@ var metricsSchema = `{"$ref": "#/definitions/metricsOutput", "definitions": {
     "uniqueItems": true,
     "items": { "$ref": "#/definitions/flatValue" }
   },
-  "substValue": {
+  "envVarSubstValue": {
     "type": "string",
     "pattern": "^([^\\$%{}]|\\${[^%\\${}]+})+$"
   },
@@ -274,7 +274,7 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
         "type": "string",
         "pattern": "^metrics$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
@@ -287,7 +287,7 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
         "type": "string",
         "pattern": "^alert$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
       "stat_type": {
         "type": "string",
@@ -304,7 +304,7 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
         "type": "string",
         "pattern": "^analytics$"
       },
-      "series": { "$ref": "#/definitions/substValue" }
+      "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "notificationOutput": {
@@ -316,10 +316,10 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
         "type": "string",
         "pattern": "^notification$"
       },
-      "channel": { "$ref": "#/definitions/substValue" },
-      "icon": { "$ref": "#/definitions/substValue" },
+      "channel": { "$ref": "#/definitions/envVarSubstValue" },
+      "icon": { "$ref": "#/definitions/envVarSubstValue" },
       "message": { "$ref": "#/definitions/kvSubstValue" },
-      "user": { "$ref": "#/definitions/substValue" }
+      "user": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "flatValue": {
@@ -332,7 +332,7 @@ var alertSchema = `{"$ref": "#/definitions/alertOutput", "definitions": {
     "uniqueItems": true,
     "items": { "$ref": "#/definitions/flatValue" }
   },
-  "substValue": {
+  "envVarSubstValue": {
     "type": "string",
     "pattern": "^([^\\$%{}]|\\${[^%\\${}]+})+$"
   },
@@ -387,7 +387,7 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
         "type": "string",
         "pattern": "^metrics$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
@@ -400,7 +400,7 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
         "type": "string",
         "pattern": "^alert$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
       "stat_type": {
         "type": "string",
@@ -417,7 +417,7 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
         "type": "string",
         "pattern": "^analytics$"
       },
-      "series": { "$ref": "#/definitions/substValue" }
+      "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "notificationOutput": {
@@ -429,10 +429,10 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
         "type": "string",
         "pattern": "^notification$"
       },
-      "channel": { "$ref": "#/definitions/substValue" },
-      "icon": { "$ref": "#/definitions/substValue" },
+      "channel": { "$ref": "#/definitions/envVarSubstValue" },
+      "icon": { "$ref": "#/definitions/envVarSubstValue" },
       "message": { "$ref": "#/definitions/kvSubstValue" },
-      "user": { "$ref": "#/definitions/substValue" }
+      "user": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "flatValue": {
@@ -445,7 +445,7 @@ var analyticsSchema = `{"$ref": "#/definitions/analyticsOutput", "definitions": 
     "uniqueItems": true,
     "items": { "$ref": "#/definitions/flatValue" }
   },
-  "substValue": {
+  "envVarSubstValue": {
     "type": "string",
     "pattern": "^([^\\$%{}]|\\${[^%\\${}]+})+$"
   },
@@ -500,7 +500,7 @@ var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definiti
         "type": "string",
         "pattern": "^metrics$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
@@ -513,7 +513,7 @@ var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definiti
         "type": "string",
         "pattern": "^alert$"
       },
-      "series": { "$ref": "#/definitions/substValue" },
+      "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
       "stat_type": {
         "type": "string",
@@ -530,7 +530,7 @@ var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definiti
         "type": "string",
         "pattern": "^analytics$"
       },
-      "series": { "$ref": "#/definitions/substValue" }
+      "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "notificationOutput": {
@@ -542,10 +542,10 @@ var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definiti
         "type": "string",
         "pattern": "^notification$"
       },
-      "channel": { "$ref": "#/definitions/substValue" },
-      "icon": { "$ref": "#/definitions/substValue" },
+      "channel": { "$ref": "#/definitions/envVarSubstValue" },
+      "icon": { "$ref": "#/definitions/envVarSubstValue" },
       "message": { "$ref": "#/definitions/kvSubstValue" },
-      "user": { "$ref": "#/definitions/substValue" }
+      "user": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
   "flatValue": {
@@ -558,7 +558,7 @@ var notificationSchema = `{"$ref": "#/definitions/notificationOutput", "definiti
     "uniqueItems": true,
     "items": { "$ref": "#/definitions/flatValue" }
   },
-  "substValue": {
+  "envVarSubstValue": {
     "type": "string",
     "pattern": "^([^\\$%{}]|\\${[^%\\${}]+})+$"
   },
