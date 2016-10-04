@@ -45,10 +45,14 @@ func TestMatchesSimple(t *testing.T) {
 		"title": "howdy",
 		"foo":   "bar",
 	}
+	msg4 := map[string]interface{}{
+		"missing-stuff": "indeed",
+	}
 	assert.True(t, r.Matches(msg0))
 	assert.True(t, r.Matches(msg1))
 	assert.False(t, r.Matches(msg2))
 	assert.False(t, r.Matches(msg3))
+	assert.False(t, r.Matches(msg4))
 }
 
 func TestMatchesNested(t *testing.T) {
@@ -76,9 +80,23 @@ func TestMatchesNested(t *testing.T) {
 			"bar": "howdy",
 		},
 	}
+	msg3 := map[string]interface{}{
+		"title": "greeting",
+		"foo": map[string]interface{}{
+			"baz": "howdy",
+		},
+	}
+	msg4 := map[string]interface{}{
+		"title": "greeting",
+		"boo": map[string]interface{}{
+			"bar": "howdy",
+		},
+	}
 	assert.True(t, r.Matches(msg0))
 	assert.True(t, r.Matches(msg1))
 	assert.False(t, r.Matches(msg2))
+	assert.False(t, r.Matches(msg3))
+	assert.False(t, r.Matches(msg4))
 }
 
 func TestSubstitution(t *testing.T) {

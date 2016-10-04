@@ -84,7 +84,7 @@ routes:
 	assert.Equal(t, expected, actual)
 }
 
-func TestOnlyStringMatcherValues(t *testing.T) {
+func TestOnlyNonemptyStringMatcherValues(t *testing.T) {
 	confTmpl := `
 routes:
   non-string-values:
@@ -100,7 +100,7 @@ routes:
 	_, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)
 
-	for _, invalidVal := range []string{"5", "true", "[]", "{}"} {
+	for _, invalidVal := range []string{"5", "true", "[]", "{}", `""`} {
 		conf := []byte(fmt.Sprintf(confTmpl, invalidVal))
 		_, err := newFromConfigBytes(conf)
 		assert.Error(t, err)
