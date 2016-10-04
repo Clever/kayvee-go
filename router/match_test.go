@@ -1,7 +1,6 @@
 package router
 
 import (
-	"os"
 	"sort"
 	"testing"
 
@@ -83,13 +82,12 @@ func TestMatchesNested(t *testing.T) {
 }
 
 func TestSubstitution(t *testing.T) {
-	os.Setenv("KAYVEE_TEST_VAR", "howdy")
 	r := Rule{
 		Name:     "myrule",
 		Matchers: RuleMatchers{},
 		Output: RuleOutput{
-			"channel":    "#${KAYVEE_TEST_VAR}-%{foo}-",
-			"dimensions": []string{"-%{foo}-", "-%{bar.baz}-", "-${KAYVEE_TEST_VAR}-"},
+			"channel":    "#-%{foo}-",
+			"dimensions": []string{"-%{foo}-", "-%{bar.baz}-"},
 		},
 	}
 	msg := map[string]interface{}{
@@ -101,15 +99,14 @@ func TestSubstitution(t *testing.T) {
 	}
 	expected := map[string]interface{}{
 		"rule":       "myrule",
-		"channel":    "#howdy-partner-",
-		"dimensions": []string{"-partner-", "-nest egg-", "-howdy-"},
+		"channel":    "#-partner-",
+		"dimensions": []string{"-partner-", "-nest egg-"},
 	}
 	actual := r.OutputFor(msg)
 	assert.Equal(t, expected, actual)
 }
 
 func TestRoute(t *testing.T) {
-	os.Setenv("KAYVEE_TEST_VAR", "howdy")
 	router := RuleRouter{rules: []Rule{
 		Rule{
 			Name: "rule-one",
@@ -118,7 +115,7 @@ func TestRoute(t *testing.T) {
 				"foo":   []string{"bar", "baz"},
 			},
 			Output: RuleOutput{
-				"channel":    "#${KAYVEE_TEST_VAR}-%{foo}-",
+				"channel":    "#-%{foo}-",
 				"dimensions": []string{"-%{foo}-"},
 			},
 		},
@@ -140,7 +137,7 @@ func TestRoute(t *testing.T) {
 	expected0 := []map[string]interface{}{
 		map[string]interface{}{
 			"rule":       "rule-one",
-			"channel":    "#howdy-bar-",
+			"channel":    "#-bar-",
 			"dimensions": []string{"-bar-"},
 		},
 	}
@@ -172,7 +169,7 @@ func TestRoute(t *testing.T) {
 	expected2 := SortableOutputs([]map[string]interface{}{
 		map[string]interface{}{
 			"rule":       "rule-one",
-			"channel":    "#howdy-baz-",
+			"channel":    "#-baz-",
 			"dimensions": []string{"-baz-"},
 		},
 		map[string]interface{}{

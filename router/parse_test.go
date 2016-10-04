@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"testing"
 
@@ -52,7 +53,7 @@ routes:
 				"type":    "notification",
 				"channel": "#team",
 				"icon":    ":rocket:",
-				"message": `authorized %{foo.bar} in ${SCHOOL}`,
+				"message": `authorized %{foo.bar} in Hogwarts`,
 				"user":    "@fishman",
 			},
 		},
@@ -70,6 +71,9 @@ routes:
 			},
 		},
 	}
+
+	err := os.Setenv("SCHOOL", "Hogwarts")
+	assert.Nil(t, err)
 
 	router, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)

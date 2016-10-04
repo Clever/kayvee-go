@@ -238,9 +238,9 @@ func TestRouter(t *testing.T) {
 	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assert.True(t, m.called)
 	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
-		"key1":  "val1",
-		"key2":  "val2",
-		"_meta": M{"routekey": 42},
+		"key1":    "val1",
+		"key2":    "val2",
+		"_kvmeta": M{"routekey": 42},
 	})
 	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
 }
