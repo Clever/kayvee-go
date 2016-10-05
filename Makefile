@@ -22,13 +22,13 @@ define set-version
 endef
 
 bump-major:
-	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1+1 "." $$2 "." $$3}'))
+	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1+1 ".0.0"}'))
 	$(eval MAJOR_VERS := $(firstword $(subst ., ,$(VERS))))
 	@find . -exec sed -i 's/gopkg\.in\/Clever\/kayvee-go\.v[[:digit:]]\+/gopkg\.in\/Clever\/kayvee-go\.v$(MAJOR_VERS)/' {} \;
 	$(call set-version)
 
 bump-minor:
-	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1 "." $$2+1 "." $$3}'))
+	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1 "." $$2+1 ".0"}'))
 	$(call set-version)
 
 bump-patch:
