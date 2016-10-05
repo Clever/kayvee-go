@@ -223,3 +223,34 @@ func TestAddContext(t *testing.T) {
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()),
 		kv.FormatLog("logger-tester", kv.Info, "2", M{"a": "b"}))
 }
+
+type MockRouter struct {
+	t      *testing.T
+	called bool
+}
+
+func TestRouter(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+	m := MockRouter{t, false}
+	logger.logRouter = &m
+	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assert.True(t, m.called)
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1":    "val1",
+		"key2":    "val2",
+		"_kvmeta": M{"routekey": 42},
+	})
+	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
+}
+func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
+	assert.False(m.t, m.called)
+	m.called = true
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1": "val1",
+		"key2": "val2",
+	})
+	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
+	return map[string]interface{}{"routekey": 42}
+}
