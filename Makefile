@@ -1,7 +1,7 @@
 include golang.mk
 .DEFAULT_GOAL := test # override default goal set in library makefile
 
-.PHONY: test bump-major bump-minor bump-patch $(PKGS)
+.PHONY: test bump-major bump-minor bump-patch tag-version $(PKGS)
 SHELL := /bin/bash
 PKGS = $(shell go list ./...)
 $(eval $(call golang-version-check,1.7))
@@ -18,7 +18,6 @@ define set-version
 @echo "var Version = \"$(VERS)\"" >> version.go
 @git add VERSION version.go
 @git commit -m "Bump to v$(VERS)"
-@git tag v$(VERS)
 endef
 
 bump-major:
@@ -34,6 +33,10 @@ bump-minor:
 bump-patch:
 	$(eval VERS := $(shell cat VERSION | awk 'BEGIN{FS="."} {print $$1 "." $$2 "." $$3+1}'))
 	$(call set-version)
+
+tag-version:
+	$(eval VERS := $(shell cat VERSION))
+	@git tag v$(VERS)
 
 test: tests.json $(PKGS)
 
