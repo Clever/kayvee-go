@@ -73,11 +73,11 @@ func (o *RuleOutput) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	switch outputType {
 	case "metrics":
 		schema = metricsSchema
-	case "alert":
+	case "alerts":
 		schema = alertSchema
 	case "analytics":
 		schema = analyticsSchema
-	case "notification":
+	case "notifications":
 		schema = notificationSchema
 	default:
 		return fmt.Errorf("\tOuput type not valid: %s", outputType)

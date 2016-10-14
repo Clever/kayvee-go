@@ -30,7 +30,7 @@ routes:
     matchers:
       title: ["authorize-app"]
     output:
-      type: "notification"
+      type: "notifications"
       channel: "#team"
       icon: ":rocket:"
       message: "authorized %{foo.bar} in ${SCHOOL}"
@@ -40,7 +40,7 @@ routes:
       foo.bar: ["multiple", "matches"]
       baz: ["whatever"]
     output:
-      type: "alert"
+      type: "alerts"
       series: "other-series"
       dimensions: ["baz"]
       stat_type: "gauge"
@@ -50,7 +50,7 @@ routes:
 			Name:     "rule-one",
 			Matchers: RuleMatchers{"title": []string{"authorize-app"}},
 			Output: RuleOutput{
-				"type":    "notification",
+				"type":    "notifications",
 				"channel": "#team",
 				"icon":    ":rocket:",
 				"message": `authorized %{foo.bar} in Hogwarts`,
@@ -64,7 +64,7 @@ routes:
 				"baz":     []string{"whatever"},
 			},
 			Output: RuleOutput{
-				"type":       "alert",
+				"type":       "alerts",
 				"series":     "other-series",
 				"dimensions": []interface{}{"baz"},
 				"stat_type":  "gauge",
@@ -171,7 +171,7 @@ routes:
     matchers:
       title: ["test"]
     output:
-      type: "alert"
+      type: "alerts"
       series: %s
       dimensions: %s
       stat_type: "gauge"
@@ -197,7 +197,7 @@ routes:
     matchers:
       title: ["test"]
     output:
-      type: "alert"%s
+      type: "alerts"%s
       dimensions: ["dim1", "dim2"]
       stat_type: "gauge"
 `
@@ -219,7 +219,7 @@ routes:
     matchers:
       title: ["test"]
     output:
-      type: "alert"%s
+      type: "alerts"%s
       dimensions: ["dim1", "dim2"]
       stat_type: "gauge"
 `

@@ -1,5 +1,5 @@
 {
-  "description": "Last modified: 8/4/2016",
+  "description": "Last modified: 10/14/2016",
   "routes": {
     "type": "object",
     "minProperties": 1,
@@ -29,9 +29,9 @@
     "type": "object",
     "oneOf": [
       { "$ref": "#/definitions/metricsOutput" },
-      { "$ref": "#/definitions/alertOutput" },
+      { "$ref": "#/definitions/alertsOutput" },
       { "$ref": "#/definitions/analyticsOutput" },
-      { "$ref": "#/definitions/notificationOutput" }
+      { "$ref": "#/definitions/notificationsOutput" }
     ]
   },
   "metricsOutput": {
@@ -48,14 +48,14 @@
       "dimensions": { "$ref": "#/definitions/flatValueArr" }
     }
   },
-  "alertOutput": {
+  "alertsOutput": {
     "type": "object",
     "additionalProperties": false,
     "required": ["type", "series", "dimensions", "stat_type"],
     "properties": {
       "type": {
         "type": "string",
-        "pattern": "^alert$"
+        "pattern": "^alerts$"
       },
       "series": { "$ref": "#/definitions/envVarSubstValue" },
       "dimensions": { "$ref": "#/definitions/flatValueArr" },
@@ -77,14 +77,14 @@
       "series": { "$ref": "#/definitions/envVarSubstValue" }
     }
   },
-  "notificationOutput": {
+  "notificationsOutput": {
     "type": "object",
     "additionalProperties": false,
     "required": ["type", "channel", "icon", "message", "user"],
     "properties": {
       "type": {
         "type": "string",
-        "pattern": "^notification$"
+        "pattern": "^notifications$"
       },
       "channel": { "$ref": "#/definitions/envVarSubstValue" },
       "icon": { "$ref": "#/definitions/envVarSubstValue" },
