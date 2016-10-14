@@ -42,7 +42,6 @@ test: tests.json $(PKGS)
 
 $(PKGS): golang-test-all-strict-deps
 	@go get -d -t $@
-	@go generate
 	$(call golang-test-all-strict,$@)
 
 tests.json:
