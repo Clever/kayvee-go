@@ -38,6 +38,7 @@ var reservedKeyNames = map[string]bool{
 	"source": true,
 	"value":  true,
 	"type":   true,
+	"level":  true,
 }
 
 var logLevelNames = map[LogLevel]string{
