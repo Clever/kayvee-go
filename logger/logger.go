@@ -90,9 +90,9 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
-// AddContext adds a new key-val to be logged with all log messages.
+// AddContext adds or updates a key-val to be logged with all log messages.
 func (l *Logger) AddContext(key, val string) {
-	l.globals[key] = val
+	updateContextMapIfNotReserved(l.globals, key, val)
 }
 
 // SetLogLevel sets the default log level threshold
@@ -227,6 +227,15 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	l.logWriter.Println(logString)
 }
 
+// updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.
+func updateContextMapIfNotReserved(context M, key string, val interface{}) {
+	if reservedKeyNames[strings.ToLower(key)] {
+		log.Printf("WARN: kayvee logger reserves '%s' from being set as context", key)
+		return
+	}
+	context[key] = val
+}
+
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func New(source string) *Logger {
 	return NewWithContext(source, nil)
@@ -236,11 +245,7 @@ func New(source string) *Logger {
 func NewWithContext(source string, contextValues map[string]interface{}) *Logger {
 	context := M{}
 	for k, v := range contextValues {
-		if reservedKeyNames[strings.ToLower(k)] {
-			log.Printf("WARN: kayvee logger reserves '%s' from being set as context", k)
-			continue
-		}
-		context[k] = v
+		updateContextMapIfNotReserved(context, k, v)
 	}
 	if os.Getenv("_DEPLOY_ENV") != "" {
 		context["deploy_env"] = os.Getenv("_DEPLOY_ENV")

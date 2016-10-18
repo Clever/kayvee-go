@@ -223,3 +223,21 @@ func TestAddContext(t *testing.T) {
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()),
 		kv.FormatLog("logger-tester", kv.Info, "2", M{"a": "b"}))
 }
+
+func TestFailAddReservedContext(t *testing.T) {
+	logger := New("logger-tester")
+	reservedKeyNames := map[string]bool{
+		"title":  true,
+		"source": true,
+		"value":  true,
+		"type":   true,
+		"level":  true,
+	}
+	testVal := "testingvalue"
+	for k := range reservedKeyNames {
+		updateContextMapIfNotReserved(logger.globals, k, testVal)
+		v := logger.globals[k]
+		msg := "Should not be able to set key " + k
+		assert.NotEqual(t, testVal, v, msg)
+	}
+}
