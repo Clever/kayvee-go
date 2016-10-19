@@ -1,7 +1,7 @@
 include golang.mk
 .DEFAULT_GOAL := test # override default goal set in library makefile
 
-.PHONY: test bump-major bump-minor bump-patch tag-version $(PKGS)
+.PHONY: test benchmark-data clean bump-major bump-minor bump-patch tag-version $(PKGS)
 SHELL := /bin/bash
 PKGS = $(shell go list ./...)
 $(eval $(call golang-version-check,1.7))
@@ -38,7 +38,28 @@ tag-version:
 	$(eval VERS := $(shell cat VERSION))
 	@git tag v$(VERS)
 
-test: tests.json $(PKGS)
+test: tests.json benchmark-data $(PKGS)
+
+clean:
+	rm ./benchmarks/data/corpus-basic.json
+	rm ./benchmarks/data/corpus-pathological.json
+	rm ./benchmarks/data/corpus-realistic.json
+	rm ./benchmarks/data/kvconfig-basic.yml
+	rm ./benchmarks/data/kvconfig-pathological.yml
+	rm ./benchmarks/data/kvconfig-realistic.yml
+
+benchmark-data:
+	@# Only download if the files don't exist
+	@[ -f ./benchmarks/data/corpus-basic.json ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/corpus-basic.json > ./benchmarks/data/corpus-basic.json
+	@[ -f ./benchmarks/data/corpus-pathological.json ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/corpus-pathological.json > ./benchmarks/data/corpus-pathological.json
+	@[ -f ./benchmarks/data/corpus-realistic.json ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/corpus-realistic.json > ./benchmarks/data/corpus-realistic.json
+	@[ -f ./benchmarks/data/kvconfig-basic.yml ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/kvconfig-basic.yml > ./benchmarks/data/kvconfig-basic.yml
+	@[ -f ./benchmarks/data/kvconfig-pathological.yml ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/kvconfig-pathological.yml > ./benchmarks/data/kvconfig-pathological.yml
+	@[ -f ./benchmarks/data/kvconfig-realistic.yml ] || curl https://raw.githubusercontent.com/Clever/kayvee/master/data/kvconfig-realistic.yml > ./benchmarks/data/kvconfig-realistic.yml
+
+
+benchmarks: benchmark-data
+	@go test -v -bench=. gopkg.in/Clever/kayvee-go.v5/benchmarks
 
 $(PKGS): golang-test-all-strict-deps
 	@go get -d -t $@
