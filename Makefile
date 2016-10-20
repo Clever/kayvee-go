@@ -41,12 +41,7 @@ tag-version:
 test: tests.json benchmark-data $(PKGS)
 
 clean:
-	rm ./benchmarks/data/corpus-basic.json
-	rm ./benchmarks/data/corpus-pathological.json
-	rm ./benchmarks/data/corpus-realistic.json
-	rm ./benchmarks/data/kvconfig-basic.yml
-	rm ./benchmarks/data/kvconfig-pathological.yml
-	rm ./benchmarks/data/kvconfig-realistic.yml
+	rm ./benchmarks/data/*.json ./benchmarks/data/*.yml
 
 benchmark-data:
 	@# Only download if the files don't exist
