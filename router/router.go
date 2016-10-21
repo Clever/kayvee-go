@@ -95,3 +95,14 @@ func NewFromRoutes(routes map[string]Rule) (RuleRouter, error) {
 
 	return router, nil
 }
+
+// NewFromRoutes constructs a RuleRouter using the provided map of route names
+// to Rules.
+func NewFromRoutes(routes map[string]Rule) RuleRouter {
+	router := RuleRouter{}
+	for name, rule := range routes {
+		rule.Name = name
+		router.rules = append(router.rules, rule)
+	}
+	return router
+}
