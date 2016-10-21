@@ -69,8 +69,7 @@ func (l LogLevel) String() string {
 type Logger struct {
 	globals   map[string]interface{}
 	logLvl    LogLevel
-	formatter Formatter
-	logWriter *log.Logger
+	fLogger   formatLogger
 	logRouter router.Router
 }
 
@@ -91,8 +90,8 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	}
 	l.globals["source"] = source
 	l.logLvl = logLvl
-	l.formatter = formatter
-	l.logWriter = log.New(output, "", 0) // No prefixes
+	l.fLogger.setFormatter(formatter)
+	l.fLogger.setOutput(output)
 }
 
 // AddContext implements the method for the KayveeLogger interface.
@@ -107,12 +106,12 @@ func (l *Logger) SetLogLevel(logLvl LogLevel) {
 
 // SetFormatter implements the method for the KayveeLogger interface.
 func (l *Logger) SetFormatter(formatter Formatter) {
-	l.formatter = formatter
+	l.fLogger.setFormatter(formatter)
 }
 
 // SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
-	l.logWriter = log.New(output, "", 0) // No prefixes
+	l.fLogger.setOutput(output)
 }
 
 // Debug implements the method for the KayveeLogger interface.
@@ -235,8 +234,7 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		data["_kvmeta"] = l.logRouter.Route(data)
 	}
 
-	logString := l.formatter(data)
-	l.logWriter.Println(logString)
+	l.fLogger.formatAndLog(data)
 }
 
 // updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.
@@ -277,6 +275,9 @@ func NewWithContext(source string, contextValues map[string]interface{}) *Logger
 		globals: context,
 	}
 
+	fl := defaultFormatLogger{}
+	logObj.fLogger = &fl
+
 	var logLvl LogLevel
 	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
 	if strLogLvl == "" {
@@ -289,6 +290,51 @@ func NewWithContext(source string, contextValues map[string]interface{}) *Logger
 			}
 		}
 	}
+
 	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
+
 	return &logObj
+}
+
+/////////////////////////////
+//
+//	FormatLogger
+//
+/////////////////////////////
+
+// formatLogger is an interface that abstracts the last steps in submitting a log
+// message to a Logger: formatting and log writing. It can be replaced for testing.
+// This is not yet exported, but could be if clients want customization of the
+// format and writing steps.
+type formatLogger interface {
+	// formatAndLog processes the given data map into a log line and writes it
+	formatAndLog(data map[string]interface{})
+
+	// setFormatter specifies the Formatter function to use in formatAndLog
+	setFormatter(formatter Formatter)
+
+	// setOutput specifies the output destination to use in formatAndLog
+	setOutput(output io.Writer)
+}
+
+// defaultFormatLogger provides default implementation of a formatLogger.
+type defaultFormatLogger struct {
+	formatter Formatter
+	logWriter *log.Logger
+}
+
+// formatAndLog implements the formatLogger interface for *defaultFormatLogger.
+func (fl *defaultFormatLogger) formatAndLog(data map[string]interface{}) {
+	logString := fl.formatter(data)
+	fl.logWriter.Println(logString)
+}
+
+// setFormat implements the formatLogger interface for *defaultFormatLogger.
+func (fl *defaultFormatLogger) setFormatter(formatter Formatter) {
+	fl.formatter = formatter
+}
+
+// setOutput implements the formatLogger interface for *defaultFormatLogger.
+func (fl *defaultFormatLogger) setOutput(output io.Writer) {
+	fl.logWriter = log.New(output, "", 0) // No prefixes
 }
