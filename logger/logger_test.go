@@ -272,3 +272,7 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
 	return map[string]interface{}{"routekey": 42}
 }
+
+func TestLoggerImplementsKayveeLogger(t *testing.T) {
+	assert.Implements(t, (*KayveeLogger)(nil), &Logger{}, "*Logger should implement KayveeLogger")
+}

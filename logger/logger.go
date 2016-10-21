@@ -19,11 +19,11 @@ import (
 // Formatter is a function type that takes a map and returns a formatted string with the contents of the map
 type Formatter func(data map[string]interface{}) string
 
-// LogLevel is an enum is used to denote level of logging
-type LogLevel int
-
 // M is a convenience type for passing data into a log message.
 type M map[string]interface{}
+
+// LogLevel is an enum is used to denote level of logging
+type LogLevel int
 
 // Constants used to define different LogLevels supported
 const (
@@ -33,15 +33,6 @@ const (
 	Error
 	Critical
 )
-
-var reservedKeyNames = map[string]bool{
-	"title":   true,
-	"source":  true,
-	"value":   true,
-	"type":    true,
-	"level":   true,
-	"_kvmeta": true,
-}
 
 var logLevelNames = map[LogLevel]string{
 	Debug:    "debug",
@@ -73,7 +64,8 @@ func (l LogLevel) String() string {
 //
 /////////////////////////////
 
-// Logger provides customization of log messages. We can change globals, default log level, formatting, and output destination.
+// Logger is the default implementation of KayveeLogger.
+// It provides customization of globals, default log level, formatting, and output destination.
 type Logger struct {
 	globals   map[string]interface{}
 	logLvl    LogLevel
@@ -83,6 +75,16 @@ type Logger struct {
 }
 
 // SetConfig allows configuration changes in one go
+var reservedKeyNames = map[string]bool{
+	"title":   true,
+	"source":  true,
+	"value":   true,
+	"type":    true,
+	"level":   true,
+	"_kvmeta": true,
+}
+
+// SetConfig implements the method for the KayveeLogger interface.
 func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer) {
 	if l.globals == nil {
 		l.globals = make(map[string]interface{})
@@ -93,99 +95,101 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
-// AddContext adds or updates a key-val to be logged with all log messages.
+// AddContext implements the method for the KayveeLogger interface.
 func (l *Logger) AddContext(key, val string) {
 	updateContextMapIfNotReserved(l.globals, key, val)
 }
 
-// SetLogLevel sets the default log level threshold
+// SetLogLevel implements the method for the KayveeLogger interface.
 func (l *Logger) SetLogLevel(logLvl LogLevel) {
 	l.logLvl = logLvl
 }
 
-// SetFormatter sets the formatter function to use
+// SetFormatter implements the method for the KayveeLogger interface.
 func (l *Logger) SetFormatter(formatter Formatter) {
 	l.formatter = formatter
 }
 
-// SetOutput changes the output destination of the logger
+// SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.logWriter = log.New(output, "", 0) // No prefixes
 }
 
-// Logging functions
-
-// Debug takes a string and logs with LogLevel = Debug
+// Debug implements the method for the KayveeLogger interface.
 func (l *Logger) Debug(title string) {
 	l.DebugD(title, M{})
 }
 
-// Info takes a string and logs with LogLevel = Info
+// Info implements the method for the KayveeLogger interface.
 func (l *Logger) Info(title string) {
 	l.InfoD(title, M{})
 }
 
-// Warn takes a string and logs with LogLevel = Warning
+// Warn implements the method for the KayveeLogger interface.
 func (l *Logger) Warn(title string) {
 	l.WarnD(title, M{})
 }
 
-// Error takes a string and logs with LogLevel = Error
+// Error implements the method for the KayveeLogger interface.
 func (l *Logger) Error(title string) {
 	l.ErrorD(title, M{})
 }
 
-// Critical takes a string and logs with LogLevel = Critical
+// Critical implements the method for the KayveeLogger interface.
 func (l *Logger) Critical(title string) {
 	l.CriticalD(title, M{})
 }
 
-// Counter takes a string and logs with LogLevel = Info, type = counter, and value = 1
+// Counter implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) Counter(title string) {
 	l.CounterD(title, 1, M{}) // Defaults to a value of 1
 }
 
-// GaugeInt takes a string and integer value. It logs with LogLevel = Info, type = gauge, and value = value
+// GaugeInt implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) GaugeInt(title string, value int) {
 	l.GaugeIntD(title, value, M{})
 }
 
-// GaugeFloat takes a string and float value. It logs with LogLevel = Info, type = gauge, and value = value
+// GaugeFloat implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) GaugeFloat(title string, value float64) {
 	l.GaugeFloatD(title, value, M{})
 }
 
-// DebugD takes a string and data map. It logs with LogLevel = Debug
+// DebugD implements the method for the KayveeLogger interface.
 func (l *Logger) DebugD(title string, data map[string]interface{}) {
 	data["title"] = title
 	l.logWithLevel(Debug, data)
 }
 
-// InfoD takes a string and data map. It logs with LogLevel = Info
+// InfoD implements the method for the KayveeLogger interface.
 func (l *Logger) InfoD(title string, data map[string]interface{}) {
 	data["title"] = title
 	l.logWithLevel(Info, data)
 }
 
-// WarnD takes a string and data map. It logs with LogLevel = Warning
+// WarnD implements the method for the KayveeLogger interface.
 func (l *Logger) WarnD(title string, data map[string]interface{}) {
 	data["title"] = title
 	l.logWithLevel(Warning, data)
 }
 
-// ErrorD takes a string and data map. It logs with LogLevel = Error
+// ErrorD implements the method for the KayveeLogger interface.
 func (l *Logger) ErrorD(title string, data map[string]interface{}) {
 	data["title"] = title
 	l.logWithLevel(Error, data)
 }
 
-// CriticalD takes a string and data map. It logs with LogLevel = Critical
+// CriticalD implements the method for the KayveeLogger interface.
 func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 	data["title"] = title
 	l.logWithLevel(Critical, data)
 }
 
-// CounterD takes a string, value, and data map. It logs with LogLevel = Info, type = counter, and value = value
+// CounterD implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
 	data["title"] = title
 	data["value"] = value
@@ -193,12 +197,14 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 	l.logWithLevel(Info, data)
 }
 
-// GaugeIntD takes a string, an integer value, and data map. It logs with LogLevel = Info, type = gauge, and value = value
+// GaugeIntD implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) GaugeIntD(title string, value int, data map[string]interface{}) {
 	l.gauge(title, value, data)
 }
 
-// GaugeFloatD takes a string, a float value, and data map. It logs with LogLevel = Info, type = gauge, and value = value
+// GaugeFloatD implements the method for the KayveeLogger interface.
+// Logs with type = gauge, and value = value
 func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
 	l.gauge(title, value, data)
 }
@@ -242,10 +248,8 @@ func updateContextMapIfNotReserved(context M, key string, val interface{}) {
 	context[key] = val
 }
 
-// WithRoutingConfig installs a new log router onto the Logger with the
-// configuration specified in `filename`. For convenience, the Logger returns
-// itself as the first return value.
-func (l *Logger) WithRoutingConfig(filename string) (*Logger, error) {
+// WithRoutingConfig implements the method for the KayveeLogger interface.
+func (l *Logger) WithRoutingConfig(filename string) (KayveeLogger, error) {
 	routes, err := router.NewFromConfig(filename)
 	if err != nil {
 		return l, err
