@@ -35,6 +35,9 @@ func substitute(
 	return newObj
 }
 
+// substituteEnvVars performs a key-value substitutions on `data`.  Substituations have the
+// following format: `${ENV_VAR_NAME}`.  Keys are replaced with the corresponding env-var
+// value.  An error is returned if an env-var is not found.
 func substituteEnvVars(data map[string]interface{}) (map[string]interface{}, error) {
 	envErrors := []string{}
 	getEnvOrErr := func(key string) string {
@@ -56,6 +59,10 @@ func substituteEnvVars(data map[string]interface{}) (map[string]interface{}, err
 	return subs, nil
 }
 
+// substituteFields performs a key-value substitutions on `data`.  Substituations have the
+// following format: `%{field-name}`.  Keys are replaced with the corresponding value returned
+// by the `lookup` function.  If lookup doesn't return a value, the text "KEY_NOT_FOUND" is
+// used instead.
 func substituteFields(
 	data map[string]interface{}, lookup func(string) (string, bool),
 ) map[string]interface{} {
