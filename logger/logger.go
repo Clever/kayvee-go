@@ -73,7 +73,6 @@ type Logger struct {
 	logRouter router.Router
 }
 
-// SetConfig allows configuration changes in one go
 var reservedKeyNames = map[string]bool{
 	"title":   true,
 	"source":  true,
