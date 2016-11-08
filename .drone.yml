@@ -13,5 +13,6 @@ script:
 - mv `pwd` $GOPATH/src/gopkg.in/Clever/kayvee-go.v5
 - cd $GOPATH/src/gopkg.in/Clever/kayvee-go.v5
 - make test
+- make benchmarks
 publish:
   report_card: {}

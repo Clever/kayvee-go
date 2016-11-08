@@ -1,7 +1,6 @@
 package router
 
 import (
-	"regexp"
 	"strings"
 )
 
@@ -20,14 +19,10 @@ func (r *Rule) Matches(msg map[string]interface{}) bool {
 // applied in accordance with the current environment and the contents of the
 // message.
 func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
-	kvSubber := func(key string) string {
-		if v, ok := lookupString(key, msg); ok {
-			return v
-		}
-		return "KEY_NOT_FOUND"
+	lookup := func(field string) (string, bool) {
+		return lookupString(field, msg)
 	}
-
-	subbed := substitute(r.Output, "%", kvSubber)
+	subbed := substituteFields(r.Output, lookup)
 	subbed["rule"] = r.Name
 	return subbed
 }
@@ -37,13 +32,11 @@ func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
 // succeeded or `"", false` if the key is missing or corresponds to a
 // non-string value.
 func lookupString(field string, obj map[string]interface{}) (string, bool) {
-	path := strings.Split(field, ".")
-	if len(path) == 0 {
-		// `field` is the empty string
+	if strings.Index(field, ".") == -1 {
 		val, ok := obj[field].(string)
 		return val, ok
 	}
-	return lookupStringPath(path, obj)
+	return lookupStringPath(strings.Split(field, "."), obj)
 }
 
 // lookupStringPath does an extended lookup on `obj`, with each entry in `fieldPath`
@@ -75,38 +68,4 @@ func fieldMatches(field string, valueMatchers []string, obj map[string]interface
 		}
 	}
 	return false
-}
-
-// substitute performs a key-value substitution on `obj`, replacing instances
-// of "X{name}" (where "X" is `substKey`) in the keys or values of `obj` with
-// `subber(name)`. It returns the substituted map and does not modify the input
-// map.
-func substitute(obj map[string]interface{}, substKey string, subber func(key string) string) map[string]interface{} {
-	newObj := make(map[string]interface{})
-	for k, v := range obj {
-		switch v := v.(type) {
-		case string:
-			newObj[k] = doSubstitute(v, substKey, subber)
-		case []string:
-			newV := make([]string, len(v))
-			for i, elem := range v {
-				newV[i] = doSubstitute(elem, substKey, subber)
-			}
-			newObj[k] = newV
-		default:
-			newObj[k] = v
-		}
-	}
-	return newObj
-}
-
-// doSubstitute performs the sort of substitution described in `substitute` on
-// the string `str`.
-func doSubstitute(str string, substKey string, subber func(key string) string) string {
-	re := regexp.MustCompile(substKey + `\{(.*?)\}`)
-	repl := func(key string) string {
-		name := re.FindStringSubmatch(key)[1]
-		return subber(name)
-	}
-	return re.ReplaceAllStringFunc(str, repl)
 }

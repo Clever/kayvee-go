@@ -3,7 +3,6 @@ package router
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -89,18 +88,11 @@ func (o *RuleOutput) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	envErrors := []string{}
-	getEnvOrErr := func(key string) string {
-		val := os.Getenv(key)
-		if val == "" {
-			envErrors = append(envErrors, fmt.Sprintf("\tEnvironment variable '%s' not set", key))
-		}
-		return val
+	output, err := substituteEnvVars(rawData)
+	if err != nil {
+		return err
 	}
-	*o = substitute(rawData, `\$`, getEnvOrErr)
-	if len(envErrors) > 0 {
-		return errors.New(strings.Join(envErrors, "\n"))
-	}
+	*o = output
 
 	return nil
 }
