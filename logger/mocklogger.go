@@ -11,10 +11,10 @@ type MockRouteCountLogger struct {
 	routeCounts map[string]int
 }
 
-// GetRuleCounts returns a map of rule names to the number of times that rule has been applied
+// RuleCounts returns a map of rule names to the number of times that rule has been applied
 // in routing logs for MockRouteCountLogger. Only includes routing rules that have at least
 // one use.
-func (ml *MockRouteCountLogger) GetRuleCounts() map[string]int {
+func (ml *MockRouteCountLogger) RuleCounts() map[string]int {
 	out := make(map[string]int)
 	for k, v := range ml.routeCounts {
 		out[k] = v

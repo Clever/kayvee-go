@@ -22,21 +22,21 @@ with a "json" format.
         "gopkg.in/Clever/kayvee-go.v5/logger"
     )
 
-    func main() {
-        myLogger := logger.New("myApp")
+    var log = logger.New("myApp")
 
+    func main() {
         // Simple debugging
-        myLogger.Debug("Service has started")
+        log.Debug("Service has started")
 
         // Make a query and log its length
         query_start := time.Now()
-        myLogger.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
+        log.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
 
         // Output structured data
-        myLogger.InfoD("DataResults", logger.M{"key": "value"})
+        log.InfoD("DataResults", logger.M{"key": "value"})
 
         // You can use the M alias for your key value pairs
-        myLogger.InfoD("DataResults", logger.M{"shorter": "line"})
+        log.InfoD("DataResults", logger.M{"shorter": "line"})
     }
 ```
 

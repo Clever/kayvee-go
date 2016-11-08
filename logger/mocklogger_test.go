@@ -40,7 +40,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	}
 	expected0 := map[string]int{}
 	mockLogger.InfoD("log0", data0)
-	actual0 := mockLogger.GetRuleCounts()
+	actual0 := mockLogger.RuleCounts()
 	assert.Equal(t, expected0, actual0)
 
 	data1 := map[string]interface{}{
@@ -50,7 +50,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 		"rule-one": 1,
 	}
 	mockLogger.InfoD("log1", data1)
-	actual1 := mockLogger.GetRuleCounts()
+	actual1 := mockLogger.RuleCounts()
 	assert.Equal(t, expected1, actual1)
 
 	data2 := map[string]interface{}{
@@ -62,6 +62,6 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 		"rule-two": 1,
 	}
 	mockLogger.InfoD("log2", data2)
-	actual2 := mockLogger.GetRuleCounts()
+	actual2 := mockLogger.RuleCounts()
 	assert.Equal(t, expected2, actual2)
 }
