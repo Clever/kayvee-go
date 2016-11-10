@@ -164,6 +164,58 @@ routes:
 	assert.Error(t, err)
 }
 
+func TestErrorsThrownWithTypeOCaught(t *testing.T) {
+	assert := assert.New(t)
+
+	config := `
+route: # Shouldn't routes (plural)
+  non-string-values:
+    matchers:
+      errors: [ "type-o" ]
+    output:
+      type: "analytics"
+      series: "fun"
+`
+	_, err := newFromConfigBytes([]byte(config))
+	assert.Error(err)
+
+	config = `
+routes:
+  non-string-values:
+    matcher: # Shouldn't matches (plural)
+      errors: [ "type-o" ]
+    output:
+      type: "analytics"
+      series: "fun"
+`
+	_, err = newFromConfigBytes([]byte(config))
+	assert.Error(err)
+
+	config = `
+routes:
+  $non-string-values: # Invalid rule name
+    matchers:
+      errors: [ "type-o" ]
+    output:
+      type: "analytics"
+      series: "fun"
+`
+	_, err = newFromConfigBytes([]byte(config))
+	assert.Error(err)
+
+	config = `
+routes:
+  $non-string-values: # Invalid rule name
+    matchers:
+      errors: [ "type-o" ]
+    outputs: # Should be output (signular)
+      type: "analytics"
+      series: "fun"
+`
+	_, err = newFromConfigBytes([]byte(config))
+	assert.Error(err)
+}
+
 func TestOutputRequiresCorrectTypes(t *testing.T) {
 	confTmpl := `
 routes:
