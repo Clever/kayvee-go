@@ -30,7 +30,8 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 			},
 		},
 	}
-	testRouter := router.NewFromRoutes(routes)
+	testRouter, err := router.NewFromRoutes(routes)
+	assert.NoError(t, err)
 
 	mockLogger := NewMockCountLogger("testing")
 	mockLogger.logger.logRouter = testRouter
