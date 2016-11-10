@@ -5,9 +5,5 @@ cat > schema_gen.go <<EOF
 
 package router
 
-var matchersSchema = \`{"\$ref": "#/definitions/matchers", "definitions": $(cat schema_definitions.json)}\`
-var metricsSchema = \`{"\$ref": "#/definitions/metricsOutput", "definitions": $(cat schema_definitions.json)}\`
-var alertSchema = \`{"\$ref": "#/definitions/alertsOutput", "definitions": $(cat schema_definitions.json)}\`
-var analyticsSchema = \`{"\$ref": "#/definitions/analyticsOutput", "definitions": $(cat schema_definitions.json)}\`
-var notificationSchema = \`{"\$ref": "#/definitions/notificationsOutput", "definitions": $(cat schema_definitions.json)}\`
+var routerSchema = \`$(cat schema_definitions.json)}\`
 EOF

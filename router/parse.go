@@ -6,13 +6,36 @@ import (
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
+	"gopkg.in/yaml.v2"
 )
+
+func parse(fileBytes []byte) (map[string]Rule, error) {
+	var config struct {
+		Routes map[string]Rule `json:"routes"`
+	}
+	// Unmarshaling also validates the config
+	err := yaml.Unmarshal(fileBytes, &config)
+	if err != nil {
+		return config.Routes, err
+	}
+
+	schemaLoader := gojsonschema.NewStringLoader(routerSchema)
+	docLoader := gojsonschema.NewGoLoader(&config)
+
+	err = validate(schemaLoader, docLoader)
+	if err != nil {
+		return config.Routes, err
+	}
+
+	return config.Routes, nil
+}
 
 func validate(schemaLoader, docLoader gojsonschema.JSONLoader) error {
 	result, err := gojsonschema.Validate(schemaLoader, docLoader)
 	if err != nil {
 		return err
 	}
+
 	if !result.Valid() {
 		errStrings := make([]string, len(result.Errors()))
 		for idx, err := range result.Errors() {
@@ -31,68 +54,29 @@ func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// into string values, breaking our ability to validate configs. i.e., it
 	// would change `title: [7, []]` into `title: ["7", "[]"]`. Using a
 	// map[string]interface{} tells the unmarshaler to use natural types.
-	var rawData map[string]interface{}
+	var rawData map[string][]interface{}
 	err := unmarshal(&rawData)
 	if err != nil {
 		return err
 	}
 
-	schemaLoader := gojsonschema.NewStringLoader(matchersSchema)
-	docLoader := gojsonschema.NewGoLoader(&rawData)
-	err = validate(schemaLoader, docLoader)
-	if err != nil {
-		return err
+	for key, arr := range rawData {
+		for _, val := range arr {
+			switch val.(type) {
+			case string:
+			default:
+				return fmt.Errorf(`Invalid log-router matcher -- key: "%s", value: %+#v.  `+
+					"Only strings can be matched.", key, val)
+			}
+		}
 	}
 
-	// Now actually do the unmarshaling into the correct type and save it to
-	// `m`.
+	// Now actually do the unmarshaling into the correct type and save it to `m`.
 	var data map[string][]string
 	err = unmarshal(&data)
 	if err != nil {
 		return err
 	}
 	*m = data
-	return nil
-}
-
-// UnmarshalYAML unmarshals the `output` section of a log-routing
-// configuration. It also validates against the schema.
-func (o *RuleOutput) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var rawData map[string]interface{}
-	err := unmarshal(&rawData)
-	if err != nil {
-		return err
-	}
-	outputType, ok := rawData["type"].(string)
-	if !ok {
-		return fmt.Errorf("Output missing type")
-	}
-
-	var schema string
-	switch outputType {
-	case "metrics":
-		schema = metricsSchema
-	case "alerts":
-		schema = alertSchema
-	case "analytics":
-		schema = analyticsSchema
-	case "notifications":
-		schema = notificationSchema
-	default:
-		return fmt.Errorf("\tOuput type not valid: %s", outputType)
-	}
-	schemaLoader := gojsonschema.NewStringLoader(schema)
-	docLoader := gojsonschema.NewGoLoader(&rawData)
-	err = validate(schemaLoader, docLoader)
-	if err != nil {
-		return err
-	}
-
-	output, err := substituteEnvVars(rawData)
-	if err != nil {
-		return err
-	}
-	*o = output
-
 	return nil
 }

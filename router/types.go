@@ -20,7 +20,7 @@ type RuleOutput map[string]interface{}
 
 // Rule is a log routing rule
 type Rule struct {
-	Name     string
-	Matchers RuleMatchers
-	Output   RuleOutput
+	Name     string       `json:"-"`
+	Matchers RuleMatchers `json:"matchers"`
+	Output   RuleOutput   `json:"output"`
 }

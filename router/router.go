@@ -6,7 +6,6 @@ import (
 	"os"
 
 	kv "gopkg.in/Clever/kayvee-go.v5"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -53,8 +52,13 @@ func NewFromConfig(filename string) (Router, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
+
 	fileBytes, err := ioutil.ReadAll(file)
-	file.Close()
+	if err != nil {
+		return nil, err
+	}
+
 	router, err := newFromConfigBytes(fileBytes)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -66,18 +70,28 @@ func NewFromConfig(filename string) (Router, error) {
 }
 
 func newFromConfigBytes(fileBytes []byte) (RuleRouter, error) {
-	var config struct {
-		Routes map[string]Rule
-	}
-	// Unmarshaling also validates the config
-	err := yaml.Unmarshal(fileBytes, &config)
+	routes, err := parse(fileBytes)
 	if err != nil {
 		return RuleRouter{}, err
 	}
+
+	return NewFromRoutes(routes)
+}
+
+// NewFromRoutes constructs a RuleRouter using the provided map of route names
+// to Rules.
+func NewFromRoutes(routes map[string]Rule) (RuleRouter, error) {
 	router := RuleRouter{}
-	for name, rule := range config.Routes {
+	for name, rule := range routes {
+		output, err := substituteEnvVars(rule.Output)
+		if err != nil {
+			return router, err
+		}
+
 		rule.Name = name
+		rule.Output = output
 		router.rules = append(router.rules, rule)
 	}
-	return router, err
+
+	return router, nil
 }
