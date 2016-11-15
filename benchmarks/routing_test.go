@@ -18,10 +18,10 @@ var basicCorpus []logline
 var pathologicalCorpus []logline
 var realisticCorpus []logline
 
-var noRouting *logger.Logger
-var basicRouting *logger.Logger
-var pathoRouting *logger.Logger
-var realRouting *logger.Logger
+var noRouting logger.KayveeLogger
+var basicRouting logger.KayveeLogger
+var pathoRouting logger.KayveeLogger
+var realRouting logger.KayveeLogger
 
 func loadJSON(path string, o interface{}) error {
 	file, err := ioutil.ReadFile(path)
