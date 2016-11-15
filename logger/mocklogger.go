@@ -2,12 +2,14 @@ package logger
 
 import (
 	"io"
+
+	"gopkg.in/Clever/kayvee-go.v5/router"
 )
 
 // MockRouteCountLogger is a mock implementation of KayveeLogger that counts the router rules
 // applied to each log call without actually formatting or writing the log line.
 type MockRouteCountLogger struct {
-	logger      *Logger
+	logger      KayveeLogger
 	routeCounts map[string]int
 }
 
@@ -31,9 +33,9 @@ func NewMockCountLogger(source string) *MockRouteCountLogger {
 func NewMockCountLoggerWithContext(source string, contextValues map[string]interface{}) *MockRouteCountLogger {
 	routeCounts := make(map[string]int)
 	lg := NewWithContext(source, contextValues)
-	lg.fLogger = &routeCountingFormatLogger{
+	lg.setFormatLogger(&routeCountingFormatLogger{
 		routeCounts: routeCounts,
-	}
+	})
 	mocklg := MockRouteCountLogger{
 		logger:      lg,
 		routeCounts: routeCounts,
@@ -111,6 +113,16 @@ func (ml *MockRouteCountLogger) SetFormatter(formatter Formatter) {
 // SetOutput implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) SetOutput(output io.Writer) {
 	ml.logger.SetOutput(output)
+}
+
+// setFormatLogger implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) setFormatLogger(output formatLogger) {
+	return // Mocks need a custom format logger
+}
+
+// SetRouter implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) SetRouter(router router.Router) {
+	ml.logger.SetRouter(router)
 }
 
 // Debug implements the method for the KayveeLogger interface.
@@ -192,9 +204,4 @@ func (ml *MockRouteCountLogger) GaugeIntD(title string, value int, data map[stri
 // Logs with type = gauge, and value = value
 func (ml *MockRouteCountLogger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
 	ml.logger.GaugeFloatD(title, value, data)
-}
-
-// WithRoutingConfig implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) WithRoutingConfig(filename string) (KayveeLogger, error) {
-	return ml.logger.WithRoutingConfig(filename)
 }

@@ -27,7 +27,7 @@ func init() {
 // Route returns routing metadata for the log line `msg`. The outputs (with
 // variable substitutions performed) for each rule matched are placed under the
 // "routes" key.
-func (r RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
+func (r *RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	outputs := []map[string]interface{}{}
 	for _, rule := range r.rules {
 		if rule.Matches(msg) {
@@ -69,10 +69,10 @@ func NewFromConfig(filename string) (Router, error) {
 	return router, nil
 }
 
-func newFromConfigBytes(fileBytes []byte) (RuleRouter, error) {
+func newFromConfigBytes(fileBytes []byte) (Router, error) {
 	routes, err := parse(fileBytes)
 	if err != nil {
-		return RuleRouter{}, err
+		return &RuleRouter{}, err
 	}
 
 	return NewFromRoutes(routes)
@@ -80,8 +80,8 @@ func newFromConfigBytes(fileBytes []byte) (RuleRouter, error) {
 
 // NewFromRoutes constructs a RuleRouter using the provided map of route names
 // to Rules.
-func NewFromRoutes(routes map[string]Rule) (RuleRouter, error) {
-	router := RuleRouter{}
+func NewFromRoutes(routes map[string]Rule) (Router, error) {
+	router := &RuleRouter{}
 	for name, rule := range routes {
 		output, err := substituteEnvVars(rule.Output)
 		if err != nil {

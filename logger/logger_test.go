@@ -225,7 +225,9 @@ func TestAddContext(t *testing.T) {
 }
 
 func TestFailAddReservedContext(t *testing.T) {
-	logger := New("logger-tester")
+	logger, ok := New("logger-tester").(*Logger)
+	assert.True(t, ok)
+
 	reservedKeyNames := map[string]bool{
 		"title":  true,
 		"source": true,
@@ -251,8 +253,9 @@ func TestRouter(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
+
 	m := MockRouter{t, false}
-	logger.logRouter = &m
+	logger.SetRouter(&m)
 	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assert.True(t, m.called)
 	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{

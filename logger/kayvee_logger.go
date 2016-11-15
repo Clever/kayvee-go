@@ -2,6 +2,8 @@ package logger
 
 import (
 	"io"
+
+	"gopkg.in/Clever/kayvee-go.v5/router"
 )
 
 /////////////////////////////
@@ -32,10 +34,12 @@ type KayveeLogger interface {
 	// SetOutput changes the output destination of the logger
 	SetOutput(output io.Writer)
 
-	// WithRoutingConfig installs a new log router onto the KayveeLogger with the
-	// configuration specified in `filename`. For convenience, the KayveeLogger is expected
-	// to return itself as the first return value.
-	WithRoutingConfig(filename string) (KayveeLogger, error)
+	// setFormatLogger use for to implemente the mock
+	setFormatLogger(fl formatLogger)
+
+	// SetRouter changes the router for this logger instance.  Once set, logs produced by this
+	// logger will not be touched by the global router.  Mostly used for testing and benchmarking.
+	SetRouter(router router.Router)
 
 	//
 	// Logging

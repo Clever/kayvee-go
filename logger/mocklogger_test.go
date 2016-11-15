@@ -34,7 +34,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockLogger := NewMockCountLogger("testing")
-	mockLogger.logger.logRouter = testRouter
+	mockLogger.SetRouter(testRouter)
 
 	data0 := map[string]interface{}{
 		"wrong": "stuff",

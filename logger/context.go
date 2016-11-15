@@ -7,7 +7,7 @@ type loggerKeyType struct{}
 var loggerKey = loggerKeyType{}
 
 // NewContext creates a new context object containing a logger value.
-func NewContext(ctx context.Context, logger *Logger) context.Context {
+func NewContext(ctx context.Context, logger KayveeLogger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }
 
@@ -16,9 +16,9 @@ func NewContext(ctx context.Context, logger *Logger) context.Context {
 // created and returned. This allows users of this method to use the logger
 // immediately, e.g.
 //   logger.FromContext(ctx).Info("...")
-func FromContext(ctx context.Context) *Logger {
+func FromContext(ctx context.Context) KayveeLogger {
 	logger := ctx.Value(loggerKey)
-	if lggr, ok := logger.(*Logger); ok {
+	if lggr, ok := logger.(KayveeLogger); ok {
 		return lggr
 	}
 	return New("")
