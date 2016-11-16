@@ -73,6 +73,8 @@ type Logger struct {
 	logRouter router.Router
 }
 
+var globalRouter router.Router
+
 var reservedKeyNames = map[string]bool{
 	"title":   true,
 	"source":  true,
@@ -80,6 +82,15 @@ var reservedKeyNames = map[string]bool{
 	"type":    true,
 	"level":   true,
 	"_kvmeta": true,
+}
+
+// SetGlobalRouting installs a new log router onto the KayveeLogger with the
+// configuration specified in `filename`. For convenience, the KayveeLogger is expected
+// to return itself as the first return value.
+func SetGlobalRouting(filename string) error {
+	var err error
+	globalRouter, err = router.NewFromConfig(filename)
+	return err
 }
 
 // SetConfig implements the method for the KayveeLogger interface.
@@ -98,6 +109,11 @@ func (l *Logger) AddContext(key, val string) {
 	updateContextMapIfNotReserved(l.globals, key, val)
 }
 
+// SetRouter implements the method for the KayveeLogger interface.
+func (l *Logger) SetRouter(router router.Router) {
+	l.logRouter = router
+}
+
 // SetLogLevel implements the method for the KayveeLogger interface.
 func (l *Logger) SetLogLevel(logLvl LogLevel) {
 	l.logLvl = logLvl
@@ -111,6 +127,10 @@ func (l *Logger) SetFormatter(formatter Formatter) {
 // SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.fLogger.setOutput(output)
+}
+
+func (l *Logger) setFormatLogger(fl formatLogger) {
+	l.fLogger = fl
 }
 
 // Debug implements the method for the KayveeLogger interface.
@@ -231,6 +251,8 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	}
 	if l.logRouter != nil {
 		data["_kvmeta"] = l.logRouter.Route(data)
+	} else if globalRouter != nil {
+		data["_kvmeta"] = globalRouter.Route(data)
 	}
 
 	l.fLogger.formatAndLog(data)
@@ -245,23 +267,13 @@ func updateContextMapIfNotReserved(context M, key string, val interface{}) {
 	context[key] = val
 }
 
-// WithRoutingConfig implements the method for the KayveeLogger interface.
-func (l *Logger) WithRoutingConfig(filename string) (KayveeLogger, error) {
-	routes, err := router.NewFromConfig(filename)
-	if err != nil {
-		return l, err
-	}
-	l.logRouter = routes
-	return l, nil
-}
-
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
-func New(source string) *Logger {
+func New(source string) KayveeLogger {
 	return NewWithContext(source, nil)
 }
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
-func NewWithContext(source string, contextValues map[string]interface{}) *Logger {
+func NewWithContext(source string, contextValues map[string]interface{}) KayveeLogger {
 	context := M{}
 	for k, v := range contextValues {
 		updateContextMapIfNotReserved(context, k, v)

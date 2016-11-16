@@ -22,12 +22,10 @@ import (
     "gopkg.in/Clever/kayvee-go.v5/logger"
 )
 
-var log logger.KayveeLogger
+var log = logger.New("myApp")
 
 func init() {
-    var err error
-    log, err = logger.New("myApp").WithRoutingConfig("./kvconfig.yml")
-
+    err := logger.SetGlobalRouting("./kvconfig.yml")
     if err != nil {
         panic(err)
     }
@@ -94,10 +92,8 @@ func TestDataResultsRouting(t *testing.T) {
 
     mocklog := logger.NewMockCountLogger("myApp")
 
-    var err error
     // Overrides package level logger
-    log, err = mocklog.WithRoutingConfig("./kvconfig.yml")
-    assert.NoError(err)
+    log = mocklog
 
     main() // Call function to generate log lines
 

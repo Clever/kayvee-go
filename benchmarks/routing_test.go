@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"gopkg.in/Clever/kayvee-go.v5/logger"
+	"gopkg.in/Clever/kayvee-go.v5/router"
 )
 
 type logline struct {
@@ -56,18 +57,27 @@ func init() {
 	}
 
 	noRouting = logger.New("perf")
-	basicRouting, err = logger.New("perf").WithRoutingConfig("./data/kvconfig-basic.yml")
+
+	basicRouting = logger.New("perf")
+	basicRouter, err := router.NewFromConfig("./data/kvconfig-basic.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pathoRouting, err = logger.New("perf").WithRoutingConfig("./data/kvconfig-pathological.yml")
+	basicRouting.SetRouter(basicRouter)
+
+	pathoRouting = logger.New("perf")
+	pathoRouter, err := router.NewFromConfig("./data/kvconfig-pathological.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	realRouting, err = logger.New("perf").WithRoutingConfig("./data/kvconfig-realistic.yml")
+	pathoRouting.SetRouter(pathoRouter)
+
+	realRouting = logger.New("perf")
+	realRouter, err := router.NewFromConfig("./data/kvconfig-realistic.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
+	realRouting.SetRouter(realRouter)
 
 	output := &noopWriter{}
 	formatter := func(noop map[string]interface{}) string { return "" }

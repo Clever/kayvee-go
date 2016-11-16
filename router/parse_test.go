@@ -78,7 +78,9 @@ routes:
 	router, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)
 
-	actual := SortableRules(router.rules)
+	r, ok := router.(*RuleRouter)
+	assert.True(t, ok)
+	actual := SortableRules(r.rules)
 	sort.Sort(expected)
 	sort.Sort(actual)
 	assert.Equal(t, expected, actual)
