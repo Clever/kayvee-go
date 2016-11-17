@@ -40,10 +40,10 @@ func main() {
     log.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
 
     // Output structured data
-    log.InfoD("DataResults", logger.M{"key": "value"})
+    log.InfoD("DataResults", logger.M{"key": "value"})  // Sends slack message (see Log Routing)
 
     // You can use the M alias for your key value pairs
-    log.InfoD("DataResults", logger.M{"shorter": "line"})
+    log.InfoD("DataResults", logger.M{"shorter": "line"}) // will NOT send slack message
 }
 ```
 
