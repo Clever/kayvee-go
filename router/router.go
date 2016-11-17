@@ -8,16 +8,9 @@ import (
 	kv "gopkg.in/Clever/kayvee-go.v5"
 )
 
-var (
-	appName  string
-	teamName string
-)
+var teamName string
 
 func init() {
-	appName = os.Getenv("_APP_NAME")
-	if appName == "" {
-		appName = "UNSET"
-	}
 	teamName = os.Getenv("_TEAM_OWNER")
 	if teamName == "" {
 		teamName = "UNSET"
@@ -35,7 +28,6 @@ func (r *RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{
-		"app":         appName,
 		"team":        teamName,
 		"kv_version":  kv.Version,
 		"kv_language": "go",
