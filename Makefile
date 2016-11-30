@@ -54,7 +54,7 @@ benchmark-data:
 
 
 benchmarks: benchmark-data
-	@go test -v -bench=. gopkg.in/Clever/kayvee-go.v5/benchmarks
+	@go test -v -bench=. gopkg.in/Clever/kayvee-go.v6/benchmarks
 
 $(PKGS): golang-test-all-strict-deps
 	@go get -d -t $@

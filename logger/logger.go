@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	kv "gopkg.in/Clever/kayvee-go.v5"
-	"gopkg.in/Clever/kayvee-go.v5/router"
+	kv "gopkg.in/Clever/kayvee-go.v6"
+	"gopkg.in/Clever/kayvee-go.v6/router"
 )
 
 /////////////////////

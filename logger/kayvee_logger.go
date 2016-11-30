@@ -3,7 +3,7 @@ package logger
 import (
 	"io"
 
-	"gopkg.in/Clever/kayvee-go.v5/router"
+	"gopkg.in/Clever/kayvee-go.v6/router"
 )
 
 /////////////////////////////

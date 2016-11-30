@@ -1,14 +1,14 @@
 # kayvee
 --
-    import "gopkg.in/Clever/kayvee-go.v5"
+    import "gopkg.in/Clever/kayvee-go.v6"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [gopkg.in/Clever/kayvee-go.v5/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/logger)
-* [gopkg.in/Clever/kayvee-go.v5/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/middleware)
+* [gopkg.in/Clever/kayvee-go.v6/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/logger)
+* [gopkg.in/Clever/kayvee-go.v6/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/middleware)
 
 ## Examples
 
@@ -19,7 +19,7 @@ package main
 import (
     "time"
 
-    "gopkg.in/Clever/kayvee-go.v5/logger"
+    "gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 var log = logger.New("myApp")
@@ -84,7 +84,7 @@ import (
     "testing"
 
     "github.com/stretchr/testify/assert"
-    "gopkg.in/Clever/kayvee-go.v5/logger"
+    "gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 func TestDataResultsRouting(t *testing.T) {
@@ -107,6 +107,7 @@ func TestDataResultsRouting(t *testing.T) {
 
 ## Change log
 
+- v6.0 - Introduced log-routing
 - v5.0 - Middleware logger now creates a new logger on each request.
   - Breaking change to `middleware.New` constructor.
 - v4.0

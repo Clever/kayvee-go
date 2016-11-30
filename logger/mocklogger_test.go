@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	router "gopkg.in/Clever/kayvee-go.v5/router"
+	router "gopkg.in/Clever/kayvee-go.v6/router"
 )
 
 func TestMockLoggerImplementsKayveeLogger(t *testing.T) {

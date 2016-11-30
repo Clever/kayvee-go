@@ -1,6 +1,6 @@
 # validator
 --
-    import "gopkg.in/Clever/kayvee-go.v5/validator"
+    import "gopkg.in/Clever/kayvee-go.v6/validator"
 
 
 ## Usage

@@ -14,7 +14,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/Clever/kayvee-go.v5/logger"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 var defaultHandler = func(req *http.Request) map[string]interface{} {

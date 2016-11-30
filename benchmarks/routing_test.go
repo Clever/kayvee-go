@@ -6,8 +6,8 @@ import (
 	"log"
 	"testing"
 
-	"gopkg.in/Clever/kayvee-go.v5/logger"
-	"gopkg.in/Clever/kayvee-go.v5/router"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
+	"gopkg.in/Clever/kayvee-go.v6/router"
 )
 
 type logline struct {
