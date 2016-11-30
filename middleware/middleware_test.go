@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	kv "gopkg.in/Clever/kayvee-go.v5"
-	"gopkg.in/Clever/kayvee-go.v5/logger"
+	kv "gopkg.in/Clever/kayvee-go.v6"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 type bufferWriter struct {

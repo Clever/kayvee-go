@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	kv "gopkg.in/Clever/kayvee-go.v5"
+	kv "gopkg.in/Clever/kayvee-go.v6"
 )
 
 type keyVal map[string]interface{}
@@ -225,7 +225,9 @@ func TestAddContext(t *testing.T) {
 }
 
 func TestFailAddReservedContext(t *testing.T) {
-	logger := New("logger-tester")
+	logger, ok := New("logger-tester").(*Logger)
+	assert.True(t, ok)
+
 	reservedKeyNames := map[string]bool{
 		"title":  true,
 		"source": true,
@@ -240,4 +242,40 @@ func TestFailAddReservedContext(t *testing.T) {
 		msg := "Should not be able to set key " + k
 		assert.NotEqual(t, testVal, v, msg)
 	}
+}
+
+type MockRouter struct {
+	t      *testing.T
+	called bool
+}
+
+func TestRouter(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+
+	m := MockRouter{t, false}
+	logger.SetRouter(&m)
+	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assert.True(t, m.called)
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1":    "val1",
+		"key2":    "val2",
+		"_kvmeta": M{"routekey": 42},
+	})
+	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
+}
+func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
+	assert.False(m.t, m.called)
+	m.called = true
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1": "val1",
+		"key2": "val2",
+	})
+	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
+	return map[string]interface{}{"routekey": 42}
+}
+
+func TestLoggerImplementsKayveeLogger(t *testing.T) {
+	assert.Implements(t, (*KayveeLogger)(nil), &Logger{}, "*Logger should implement KayveeLogger")
 }

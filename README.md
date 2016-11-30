@@ -1,52 +1,113 @@
 # kayvee
 --
-    import "gopkg.in/Clever/kayvee-go.v5"
+    import "gopkg.in/Clever/kayvee-go.v6"
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [gopkg.in/Clever/kayvee-go.v5/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/logger)
-* [gopkg.in/Clever/kayvee-go.v5/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/middleware)
+* [gopkg.in/Clever/kayvee-go.v6/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/logger)
+* [gopkg.in/Clever/kayvee-go.v6/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v5/middleware)
 
-## Example
+## Examples
 
 ```go
-    package main
+// main.go
+package main
 
-    import(
-        "fmt"
-        "time"
+import (
+    "time"
 
-        "gopkg.in/Clever/kayvee-go.v5/logger"
-    )
+    "gopkg.in/Clever/kayvee-go.v6/logger"
+)
 
-    func main() {
-        myLogger := logger.New("myApp")
+var log = logger.New("myApp")
 
-        // Simple debugging
-        myLogger.Debug("Service has started")
-
-        // Make a query and log its length
-        query_start := time.Now()
-        myLogger.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
-
-        // Output structured data
-        myLogger.InfoD("DataResults", logger.M{"key": "value"})
-
-        // You can use the M alias for your key value pairs
-        myLogger.InfoD("DataResults", logger.M{"shorter": "line"})
+func init() {
+    err := logger.SetGlobalRouting("./kvconfig.yml")
+    if err != nil {
+        panic(err)
     }
+}
+
+func main() {
+    // Simple debugging
+    log.Debug("Service has started")
+
+    // Make a query and log its length
+    query_start := time.Now()
+    log.GaugeFloat("QueryTime", time.Since(query_start).Seconds())
+
+    // Output structured data
+    log.InfoD("DataResults", logger.M{"key": "value"})  // Sends slack message (see Log Routing)
+
+    // You can use the M alias for your key value pairs
+    log.InfoD("DataResults", logger.M{"shorter": "line"}) // will NOT send slack message
+}
 ```
 
+## Log Routing
+
+Log routing is a mechanism for defining where log lines should go once they've entered Clever's logging pipeline.   Routes are defined in a yaml file called kvconfig.yml.  Here's an example of a log routing rule that sends a slack message:
+
+```yaml
+# kvconfig.yml
+routes:
+  key-val: # Rule name
+    matchers:
+      title: [ "DataResults", "QueryResults" ]
+      key: [ "value" ]
+    output: # Routes log line to #data-dinesty slack channel
+      type: "notifications"
+      channel: "#data-dinesty"
+      icon: ":bird:"
+      message: "The data is in: %{key}"
+      user: "The Data Duck"
+```
+
+For more information see https://clever.atlassian.net/wiki/display/ENG/Log+Routing
 
 ## Testing
 
 Run `make test` to execute the tests
 
+### Testing Log Routing
+
+A mock logger is provided to make it easier to test log routing rules.  Here's an exampe:
+
+```go
+// Units for main.go which is defined in the examples section of this README
+package main
+
+import (
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+    "gopkg.in/Clever/kayvee-go.v6/logger"
+)
+
+func TestDataResultsRouting(t *testing.T) {
+    assert := assert.New(t)
+
+    mocklog := logger.NewMockCountLogger("myApp")
+
+    // Overrides package level logger
+    log = mocklog
+
+    main() // Call function to generate log lines
+
+    counts := mocklog.RuleCounts()
+
+    assert.Contains(counts, "key-val")
+    assert.Equal(counts["key-val"], 1)
+}
+```
+
+
 ## Change log
 
+- v6.0 - Introduced log-routing
 - v5.0 - Middleware logger now creates a new logger on each request.
   - Breaking change to `middleware.New` constructor.
 - v4.0
