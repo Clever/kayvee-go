@@ -70,6 +70,12 @@ func fieldMatches(field string, valueMatchers []string, obj map[string]interface
 	if valueMatchers[0] == "*" {
 		return true
 	}
+	if val == true {
+		val = "true"
+	}
+	if val == false {
+		val = "false"
+	}
 	for _, match := range valueMatchers {
 		if val == match {
 			return true

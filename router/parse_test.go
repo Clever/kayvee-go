@@ -28,7 +28,7 @@ func TestParsesWellFormatedConfig(t *testing.T) {
 routes:
   rule-one:
     matchers:
-      title: ["authorize-app"]
+      title: ["authorize-app", true]
     output:
       type: "notifications"
       channel: "#team"
@@ -48,7 +48,7 @@ routes:
 	expected := SortableRules{
 		Rule{
 			Name:     "rule-one",
-			Matchers: RuleMatchers{"title": []string{"authorize-app"}},
+			Matchers: RuleMatchers{"title": []string{"authorize-app", "true"}},
 			Output: RuleOutput{
 				"type":    "notifications",
 				"channel": "#team",
@@ -102,7 +102,7 @@ routes:
 	_, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)
 
-	for _, invalidVal := range []string{"5", "true", "[]", "{}", `""`} {
+	for _, invalidVal := range []string{"5", "[]", "{}", `""`} {
 		conf := []byte(fmt.Sprintf(confTmpl, invalidVal))
 		_, err := newFromConfigBytes(conf)
 		assert.Error(t, err)
