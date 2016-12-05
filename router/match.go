@@ -20,36 +20,38 @@ func (r *Rule) Matches(msg map[string]interface{}) bool {
 // message.
 func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
 	lookup := func(field string) (string, bool) {
-		return lookupString(field, msg)
+		val, ok := lookupField(field, msg)
+		return val.(string), ok
 	}
 	subbed := substituteFields(r.Output, lookup)
 	subbed["rule"] = r.Name
 	return subbed
 }
 
-// lookupString does an extended lookup on `obj`, interpreting dots in field as
+// lookupField does an extended lookup on `obj`, interpreting dots in field as
 // corresponding to subobjects. It returns the value and true if the lookup
 // succeeded or `"", false` if the key is missing or corresponds to a
 // non-string value.
-func lookupString(field string, obj map[string]interface{}) (string, bool) {
+func lookupField(field string, obj map[string]interface{}) (interface{}, bool) {
 	if strings.Index(field, ".") == -1 {
-		val, ok := obj[field].(string)
+		val, ok := obj[field]
 		return val, ok
 	}
-	return lookupStringPath(strings.Split(field, "."), obj)
+	return lookupFieldPath(strings.Split(field, "."), obj)
 }
 
-// lookupStringPath does an extended lookup on `obj`, with each entry in `fieldPath`
+// lookupFieldPath does an extended lookup on `obj`, with each entry in `fieldPath`
 // corresponding to subobjects. It returns the value and true if the lookup
 // succeeded or `"", false` if a key was missing along the path or if the final
 // key corresponds to a non-string value.
-func lookupStringPath(fieldPath []string, obj map[string]interface{}) (string, bool) {
+func lookupFieldPath(fieldPath []string, obj map[string]interface{}) (interface{}, bool) {
+	part := fieldPath[0]
 	if len(fieldPath) == 1 {
-		val, ok := obj[fieldPath[0]].(string)
+		val, ok := obj[part]
 		return val, ok
 	}
-	if subObj, ok := obj[fieldPath[0]].(map[string]interface{}); ok {
-		return lookupStringPath(fieldPath[1:], subObj)
+	if subObj, ok := obj[part].(map[string]interface{}); ok {
+		return lookupFieldPath(fieldPath[1:], subObj)
 	}
 	return "", false
 }
@@ -58,9 +60,15 @@ func lookupStringPath(fieldPath []string, obj map[string]interface{}) (string, b
 // is one of `values`. Dots in `field` are interpreted as denoting subobjects
 // -- i.e. the field name "x.y.z" says to check obj["x"]["y"]["z"].
 func fieldMatches(field string, valueMatchers []string, obj map[string]interface{}) bool {
-	val, ok := lookupString(field, obj)
+	val, ok := lookupField(field, obj)
 	if !ok {
 		return false
+	}
+	if val == "" || val == nil {
+		return false
+	}
+	if valueMatchers[0] == "*" {
+		return true
 	}
 	for _, match := range valueMatchers {
 		if val == match {

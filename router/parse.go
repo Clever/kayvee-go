@@ -77,6 +77,16 @@ func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err != nil {
 		return err
 	}
+
+	for field, vals := range data {
+		for _, val := range vals {
+			if val == "*" && len(vals) > 1 {
+				return fmt.Errorf("Invalid matcher values in %s.\n"+
+					"Wildcard matcher can't co-exist with other matchers.", field)
+			}
+		}
+	}
+
 	*m = data
 	return nil
 }

@@ -216,6 +216,18 @@ routes:
 `
 	_, err = newFromConfigBytes([]byte(config))
 	assert.Error(err)
+
+	config = `
+routes:
+  string-values:
+    matchers:
+      errors: [ "*", "type-o" ] # A wildcard cannot exist with other matchers
+    output:
+      type: "analytics"
+      series: "fun"
+`
+	_, err = newFromConfigBytes([]byte(config))
+	assert.Error(err)
 }
 
 func TestOutputRequiresCorrectTypes(t *testing.T) {
