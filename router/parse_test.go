@@ -171,7 +171,7 @@ func TestErrorsThrownWithTypeOCaught(t *testing.T) {
 
 	config := `
 route: # Shouldn't routes (plural)
-  non-string-values:
+  string-values:
     matchers:
       errors: [ "type-o" ]
     output:
@@ -183,7 +183,7 @@ route: # Shouldn't routes (plural)
 
 	config = `
 routes:
-  non-string-values:
+  string-values:
     matcher: # Shouldn't matches (plural)
       errors: [ "type-o" ]
     output:
@@ -195,10 +195,10 @@ routes:
 
 	config = `
 routes:
-  $non-string-values: # Invalid rule name
+  string-values:
     matchers:
       errors: [ "type-o" ]
-    output:
+    outputs: # Should be output (singular)
       type: "analytics"
       series: "fun"
 `
@@ -207,10 +207,10 @@ routes:
 
 	config = `
 routes:
-  $non-string-values: # Invalid rule name
+  $invalid-string-values: # Invalid rule name
     matchers:
       errors: [ "type-o" ]
-    outputs: # Should be output (signular)
+    output:
       type: "analytics"
       series: "fun"
 `
