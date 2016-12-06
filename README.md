@@ -17,17 +17,25 @@ with a "json" format.
 package main
 
 import (
+    l "log"
+    "path"
     "time"
 
+    "github.com/kardianos/osext"
     "gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 var log = logger.New("myApp")
 
 func init() {
-    err := logger.SetGlobalRouting("./kvconfig.yml")
+    // Use osext library to consistently find kvconfig.yml file
+    dir, err := osext.ExecutableFolder()
     if err != nil {
-        panic(err)
+        l.Fatal(err)
+    }
+    err = logger.SetGlobalRouting(path.Join(dir, "kvconfig.yml"))
+    if err != nil {
+        l.Fatal(err)
     }
 }
 
@@ -81,11 +89,19 @@ A mock logger is provided to make it easier to test log routing rules.  Here's a
 package main
 
 import (
+    l "log"
     "testing"
 
     "github.com/stretchr/testify/assert"
     "gopkg.in/Clever/kayvee-go.v6/logger"
 )
+
+func init() {
+    err := logger.SetGlobalRouting("./kvconfig.yml")
+    if err != nil {
+        l.Fatal(err)
+    }
+}
 
 func TestDataResultsRouting(t *testing.T) {
     assert := assert.New(t)

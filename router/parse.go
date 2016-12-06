@@ -60,10 +60,20 @@ func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
+	data := map[string][]string{}
 	for key, arr := range rawData {
+		data[key] = []string{}
+
 		for _, val := range arr {
-			switch val.(type) {
+			switch v := val.(type) {
 			case string:
+				data[key] = append(data[key], v)
+			case bool:
+				if v {
+					data[key] = append(data[key], "true")
+				} else {
+					data[key] = append(data[key], "false")
+				}
 			default:
 				return fmt.Errorf(`Invalid log-router matcher -- key: "%s", value: %+#v.  `+
 					"Only strings can be matched.", key, val)
@@ -71,12 +81,15 @@ func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		}
 	}
 
-	// Now actually do the unmarshaling into the correct type and save it to `m`.
-	var data map[string][]string
-	err = unmarshal(&data)
-	if err != nil {
-		return err
+	for field, vals := range data {
+		for _, val := range vals {
+			if val == "*" && len(vals) > 1 {
+				return fmt.Errorf("Invalid matcher values in %s.\n"+
+					"Wildcard matcher can't co-exist with other matchers.", field)
+			}
+		}
 	}
+
 	*m = data
 	return nil
 }

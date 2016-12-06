@@ -99,6 +99,119 @@ func TestMatchesNested(t *testing.T) {
 	assert.False(t, r.Matches(msg4))
 }
 
+func TestWildcardMatches(t *testing.T) {
+	assert := assert.New(t)
+	r := Rule{
+		Matchers: RuleMatchers{"any": []string{"*"}},
+		Output:   RuleOutput{},
+	}
+
+	tests := []struct {
+		Description string
+		Message     map[string]interface{}
+		DoesMatch   bool
+	}{
+		{
+			Description: "Matches any bool",
+			Message:     map[string]interface{}{"any": false},
+			DoesMatch:   true,
+		},
+		{
+			Description: "Matches any number",
+			Message:     map[string]interface{}{"any": 5},
+			DoesMatch:   true,
+		},
+		{
+			Description: "Matches any string",
+			Message:     map[string]interface{}{"any": "hello"},
+			DoesMatch:   true,
+		},
+		{
+			Description: "Matches any object",
+			Message: map[string]interface{}{
+				"any": map[string]interface{}{
+					"baz": "howdy",
+				},
+			},
+			DoesMatch: true,
+		},
+		{
+			Description: "Does not matches empty string",
+			Message:     map[string]interface{}{"any": ""},
+			DoesMatch:   false,
+		},
+		{
+			Description: "Does not matches nil",
+			Message:     map[string]interface{}{"any": nil},
+			DoesMatch:   false,
+		},
+		{
+			Description: "Does not match message without correct field",
+			Message: map[string]interface{}{
+				"title": "greeting",
+				"boo": map[string]interface{}{
+					"bar": "howdy",
+				},
+			},
+			DoesMatch: false,
+		},
+	}
+	for _, test := range tests {
+		t.Log(test.Description)
+		if test.DoesMatch {
+			assert.True(r.Matches(test.Message))
+		} else {
+			assert.False(r.Matches(test.Message))
+		}
+	}
+}
+
+func TestBooleanMatches(t *testing.T) {
+	assert := assert.New(t)
+	r := Rule{
+		Matchers: RuleMatchers{"bull": []string{"true"}},
+		Output:   RuleOutput{},
+	}
+
+	tests := []struct {
+		Description string
+		Message     map[string]interface{}
+		DoesMatch   bool
+	}{
+		{
+			Description: "Simple match",
+			Message:     map[string]interface{}{"bull": true},
+			DoesMatch:   true,
+		},
+		{
+			Description: "Match with multiple fields",
+			Message:     map[string]interface{}{"any": false, "bull": true},
+			DoesMatch:   true,
+		},
+		{
+			Description: "Bool that doesn't match",
+			Message:     map[string]interface{}{"bull": false},
+			DoesMatch:   false,
+		},
+		{
+			Description: "Messsge that doesn't have correct field",
+			Message: map[string]interface{}{
+				"title": "greeting",
+				"foo":   map[string]string{"bar": "howdy"},
+			},
+			DoesMatch: false,
+		},
+	}
+	for _, test := range tests {
+		t.Log(test.Description)
+		if test.DoesMatch {
+			assert.True(r.Matches(test.Message))
+		} else {
+			assert.False(r.Matches(test.Message))
+		}
+	}
+}
+
 func TestSubstitution(t *testing.T) {
 	r := Rule{
 		Name:     "myrule",

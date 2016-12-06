@@ -28,7 +28,7 @@ func TestParsesWellFormatedConfig(t *testing.T) {
 routes:
   rule-one:
     matchers:
-      title: ["authorize-app"]
+      title: ["authorize-app", true]
     output:
       type: "notifications"
       channel: "#team"
@@ -48,7 +48,7 @@ routes:
 	expected := SortableRules{
 		Rule{
 			Name:     "rule-one",
-			Matchers: RuleMatchers{"title": []string{"authorize-app"}},
+			Matchers: RuleMatchers{"title": []string{"authorize-app", "true"}},
 			Output: RuleOutput{
 				"type":    "notifications",
 				"channel": "#team",
@@ -102,7 +102,7 @@ routes:
 	_, err := newFromConfigBytes(conf)
 	assert.Nil(t, err)
 
-	for _, invalidVal := range []string{"5", "true", "[]", "{}", `""`} {
+	for _, invalidVal := range []string{"5", "[]", "{}", `""`} {
 		conf := []byte(fmt.Sprintf(confTmpl, invalidVal))
 		_, err := newFromConfigBytes(conf)
 		assert.Error(t, err)
@@ -171,7 +171,7 @@ func TestErrorsThrownWithTypeOCaught(t *testing.T) {
 
 	config := `
 route: # Shouldn't routes (plural)
-  non-string-values:
+  string-values:
     matchers:
       errors: [ "type-o" ]
     output:
@@ -183,7 +183,7 @@ route: # Shouldn't routes (plural)
 
 	config = `
 routes:
-  non-string-values:
+  string-values:
     matcher: # Shouldn't matches (plural)
       errors: [ "type-o" ]
     output:
@@ -195,7 +195,19 @@ routes:
 
 	config = `
 routes:
-  $non-string-values: # Invalid rule name
+  string-values:
+    matchers:
+      errors: [ "type-o" ]
+    outputs: # Should be output (singular)
+      type: "analytics"
+      series: "fun"
+`
+	_, err = newFromConfigBytes([]byte(config))
+	assert.Error(err)
+
+	config = `
+routes:
+  $invalid-string-values: # Invalid rule name
     matchers:
       errors: [ "type-o" ]
     output:
@@ -207,10 +219,10 @@ routes:
 
 	config = `
 routes:
-  $non-string-values: # Invalid rule name
+  string-values:
     matchers:
-      errors: [ "type-o" ]
-    outputs: # Should be output (signular)
+      errors: [ "*", "type-o" ] # A wildcard cannot exist with other matchers
+    output:
       type: "analytics"
       series: "fun"
 `
