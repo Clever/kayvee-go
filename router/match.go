@@ -64,20 +64,31 @@ func fieldMatches(field string, valueMatchers []string, obj map[string]interface
 	if !ok {
 		return false
 	}
-	if val == "" || val == nil {
+
+	strVal := ""
+	switch v := val.(type) {
+	case nil:
+		return false
+	case string:
+		strVal = v
+	case bool:
+		if v {
+			strVal = "true"
+		} else {
+			strVal = "false"
+		}
+	default: // Wildcard should match anything that isn't null or ""
+		return valueMatchers[0] == "*"
+	}
+
+	if strVal == "" {
 		return false
 	}
 	if valueMatchers[0] == "*" {
 		return true
 	}
-	if val == true {
-		val = "true"
-	}
-	if val == false {
-		val = "false"
-	}
 	for _, match := range valueMatchers {
-		if val == match {
+		if strVal == match {
 			return true
 		}
 	}
