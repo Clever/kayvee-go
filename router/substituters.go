@@ -64,16 +64,35 @@ func substituteEnvVars(data map[string]interface{}) (map[string]interface{}, err
 // by the `lookup` function.  If lookup doesn't return a value, the text "KEY_NOT_FOUND" is
 // used instead.
 func substituteFields(
-	data map[string]interface{}, lookup func(string) (string, bool),
+	data map[string]interface{}, lookup func(string) (interface{}, bool),
 ) map[string]interface{} {
 	kvSubber := func(key string) string {
 		// Performance optimization: slice sub-sequence is faster than regex.FindStringSubmatch
 		key = key[2 : len(key)-1]
 
-		if v, ok := lookup(key); ok {
-			return v
+		val, ok := lookup(key)
+		if !ok {
+			return "KEY_NOT_FOUND"
 		}
-		return "KEY_NOT_FOUND"
+
+		switch v := val.(type) {
+		case string:
+			return v
+		case bool:
+			return fmt.Sprintf("%t", v)
+		case int:
+			return fmt.Sprintf("%d", v)
+		case int32:
+			return fmt.Sprintf("%d", v)
+		case int64:
+			return fmt.Sprintf("%d", v)
+		case float32:
+			return fmt.Sprintf("%g", v)
+		case float64:
+			return fmt.Sprintf("%g", v)
+		default:
+			return "UNKNOWN_VALUE_TYPE"
+		}
 	}
 
 	return substitute(data, fieldTokens, kvSubber)
