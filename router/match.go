@@ -19,9 +19,8 @@ func (r *Rule) Matches(msg map[string]interface{}) bool {
 // applied in accordance with the current environment and the contents of the
 // message.
 func (r *Rule) OutputFor(msg map[string]interface{}) map[string]interface{} {
-	lookup := func(field string) (string, bool) {
-		val, ok := lookupField(field, msg)
-		return val.(string), ok
+	lookup := func(field string) (interface{}, bool) {
+		return lookupField(field, msg)
 	}
 	subbed := substituteFields(r.Output, lookup)
 	subbed["rule"] = r.Name

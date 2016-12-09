@@ -219,11 +219,20 @@ func TestSubstitution(t *testing.T) {
 		Output: RuleOutput{
 			"channel":    "#-%{foo}-",
 			"dimensions": []string{"-%{foo}-", "-%{bar.baz}-"},
+			"msg": "%{an-int}, %{an-int32}, %{an-int64}, " +
+				"%{a-bool}, %{a-float32}, %{a-float64}, %{a-string}, %{bar}",
 		},
 	}
 	msg := map[string]interface{}{
-		"title": "greeting",
-		"foo":   "partner",
+		"title":     "greeting",
+		"foo":       "partner",
+		"an-int":    int(100),
+		"an-int32":  int(132),
+		"an-int64":  int(164),
+		"a-bool":    true,
+		"a-string":  "hihi",
+		"a-float32": float32(12.3456),
+		"a-float64": float64(120.3456),
 		"bar": map[string]interface{}{
 			"baz": "nest egg",
 		},
@@ -232,6 +241,7 @@ func TestSubstitution(t *testing.T) {
 		"rule":       "myrule",
 		"channel":    "#-partner-",
 		"dimensions": []string{"-partner-", "-nest egg-"},
+		"msg":        "100, 132, 164, true, 12.3456, 120.3456, hihi, UNKNOWN_VALUE_TYPE",
 	}
 	actual := r.OutputFor(msg)
 	assert.Equal(t, expected, actual)
