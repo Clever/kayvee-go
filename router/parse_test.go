@@ -240,6 +240,7 @@ routes:
       type: "alerts"
       series: %s
       dimensions: %s
+      value: "hello"
       stat_type: "gauge"
 `
 
@@ -285,9 +286,9 @@ routes:
     matchers:
       title: ["test"]
     output:
-      type: "alerts"%s
+      type: "metrics"%s
       dimensions: ["dim1", "dim2"]
-      stat_type: "gauge"
+      value: "hihi"
 `
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `
