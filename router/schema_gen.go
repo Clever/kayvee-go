@@ -3,7 +3,7 @@
 package router
 
 var routerSchema = `{
-  "description": "Last modified: 11/08/2016",
+  "description": "Last modified: 12/12/2016",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -54,7 +54,8 @@ var routerSchema = `{
           "pattern": "^metrics$"
         },
         "series": { "$ref": "#/definitions/envVarSubstValue" },
-        "dimensions": { "$ref": "#/definitions/flatValueArr" }
+        "dimensions": { "$ref": "#/definitions/flatValueArr" },
+        "value": { "$ref": "#/definitions/flatValue" }
       }
     },
     "alertsOutput": {
@@ -68,6 +69,7 @@ var routerSchema = `{
         },
         "series": { "$ref": "#/definitions/envVarSubstValue" },
         "dimensions": { "$ref": "#/definitions/flatValueArr" },
+        "value": { "$ref": "#/definitions/flatValue" },
         "stat_type": {
           "type": "string",
           "enum": ["counter", "gauge"]
