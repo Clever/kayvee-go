@@ -24,12 +24,20 @@ func (ml *MockRouteCountLogger) RuleCounts() map[string]int {
 	return out
 }
 
-// RuleMatches returns a map of rule names to the exact logs which matched that rule (after routing has
+// RuleOutputs returns a map of rule names to the exact logs which matched that rule (after routing has
 // been applied to those logs). This allows you to inspect the routed log and verify data about it.
-func (ml *MockRouteCountLogger) RuleMatches() map[string][]M {
-	out := make(map[string][]M)
-	for k, v := range ml.routeMatches {
-		out[k] = v
+func (ml *MockRouteCountLogger) RuleOutputs() map[string][]router.RuleOutput {
+	out := make(map[string][]router.RuleOutput)
+	for rule, matchingLogs := range ml.routeMatches {
+		for _, l := range matchingLogs {
+			routes := l["_kvmeta"].(map[string]interface{})["routes"].([]map[string]interface{})
+			for _, route := range routes {
+				if route["rule"].(string) == rule {
+					out[rule] = append(out[rule], route)
+					break
+				}
+			}
+		}
 	}
 	return out
 }

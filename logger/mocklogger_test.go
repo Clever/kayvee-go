@@ -48,9 +48,9 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	assert.Equal(t, expectedCounts0, actualCounts0)
 
 	t.Log("log0 -- verify rule matches")
-	actualMatches0 := mockLogger.RuleMatches()
-	expectedMatches0 := map[string][]M{}
-	assert.Equal(t, expectedMatches0, actualMatches0)
+	actualRoutes0 := mockLogger.RuleOutputs()
+	expectedRoutes0 := map[string][]router.RuleOutput{}
+	assert.Equal(t, expectedRoutes0, actualRoutes0)
 
 	t.Log("log1")
 	data1 := M{
@@ -64,33 +64,20 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	assert.Equal(t, expectedCounts1, actualCounts1)
 
 	t.Log("log1 -- verify rule matches")
-	expectedRoutedLog1 := M{
-		"foo":        "bar",
-		"source":     "testing",
-		"title":      "log1",
-		"level":      "info",
-		"deploy_env": "testing",
-		"_kvmeta": map[string]interface{}{
-			"kv_language": "go",
-			"kv_version":  "6.2.0",
-			"team":        "UNSET",
-			"routes": []map[string]interface{}{
-				map[string]interface{}{
-					"rule": "rule-one",
-					"out":  "#-bar-",
-				},
+	actualRoutes1 := mockLogger.RuleOutputs()
+	expectedRoutes1 := map[string][]router.RuleOutput{
+		"rule-one": []router.RuleOutput{
+			router.RuleOutput{
+				"rule": "rule-one",
+				"out":  "#-bar-",
 			},
 		},
 	}
-	actualMatches1 := mockLogger.RuleMatches()
-	expectedMatches1 := map[string][]M{
-		"rule-one": []M{expectedRoutedLog1},
-	}
-	assert.Equal(t, expectedMatches1, actualMatches1)
+	assert.Equal(t, expectedRoutes1, actualRoutes1)
 
 	t.Log("log2")
 	data2 := M{
-		"foo": "bar",
+		"foo": "baz",
 		"abc": "def",
 	}
 	mockLogger.InfoD("log2", data2)
@@ -104,39 +91,26 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	assert.Equal(t, expectedCounts2, actualCounts2)
 
 	t.Log("log2 -- verify rule matches")
-	expectedRoutedLog2 := M{
-		"foo":        "bar",
-		"abc":        "def",
-		"source":     "testing",
-		"title":      "log2",
-		"level":      "info",
-		"deploy_env": "testing",
-		"_kvmeta": map[string]interface{}{
-			"kv_language": "go",
-			"kv_version":  "6.2.0",
-			"team":        "UNSET",
-			"routes": []map[string]interface{}{
-				map[string]interface{}{
-					"rule": "rule-one",
-					"out":  "#-bar-",
-				},
-				map[string]interface{}{
-					"rule": "rule-two",
-					"more": "x",
-				},
+
+	expectedRoutes2 := map[string][]router.RuleOutput{
+		"rule-one": []router.RuleOutput{
+			router.RuleOutput{
+				"rule": "rule-one",
+				"out":  "#-bar-",
+			},
+			router.RuleOutput{
+				"rule": "rule-one",
+				"out":  "#-baz-",
+			},
+		},
+		"rule-two": []router.RuleOutput{
+			router.RuleOutput{
+				"rule": "rule-two",
+				"more": "x",
 			},
 		},
 	}
-	expectedMatches2 := map[string][]M{
-		"rule-one": []M{
-			expectedRoutedLog1,
-			expectedRoutedLog2,
-		},
-		"rule-two": []M{
-			expectedRoutedLog2,
-		},
-	}
 
-	actualMatches2 := mockLogger.RuleMatches()
-	assert.Equal(t, expectedMatches2, actualMatches2)
+	actualRoutes2 := mockLogger.RuleOutputs()
+	assert.Equal(t, expectedRoutes2, actualRoutes2)
 }
