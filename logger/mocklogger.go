@@ -10,7 +10,7 @@ import (
 // applied to each log call without actually formatting or writing the log line.
 type MockRouteCountLogger struct {
 	logger       KayveeLogger
-	routeMatches map[string][]M
+	routeMatches map[string][]router.RuleOutput
 }
 
 // RuleCounts returns a map of rule names to the number of times that rule has been applied
@@ -27,19 +27,7 @@ func (ml *MockRouteCountLogger) RuleCounts() map[string]int {
 // RuleOutputs returns a map of rule names to the exact logs which matched that rule (after routing has
 // been applied to those logs). This allows you to inspect the routed log and verify data about it.
 func (ml *MockRouteCountLogger) RuleOutputs() map[string][]router.RuleOutput {
-	out := make(map[string][]router.RuleOutput)
-	for rule, matchingLogs := range ml.routeMatches {
-		for _, l := range matchingLogs {
-			routes := l["_kvmeta"].(map[string]interface{})["routes"].([]map[string]interface{})
-			for _, route := range routes {
-				if route["rule"].(string) == rule {
-					out[rule] = append(out[rule], route)
-					break
-				}
-			}
-		}
-	}
-	return out
+	return ml.routeMatches
 }
 
 // NewMockCountLogger returns a new MockRoutCountLogger with the specified `source`.
@@ -49,7 +37,7 @@ func NewMockCountLogger(source string) *MockRouteCountLogger {
 
 // NewMockCountLoggerWithContext returns a new MockRoutCountLogger with the specified `source` and `contextValues`.
 func NewMockCountLoggerWithContext(source string, contextValues map[string]interface{}) *MockRouteCountLogger {
-	routeMatches := make(map[string][]M)
+	routeMatches := make(map[string][]router.RuleOutput)
 	lg := NewWithContext(source, contextValues)
 	lg.setFormatLogger(&routeCountingFormatLogger{
 		routeMatches: routeMatches,
@@ -70,7 +58,7 @@ func NewMockCountLoggerWithContext(source string, contextValues map[string]inter
 // routeCountingFormatLogger implements the formatLogger interface to allow for counting
 // invocations of routing rules.
 type routeCountingFormatLogger struct {
-	routeMatches map[string][]M
+	routeMatches map[string][]router.RuleOutput
 }
 
 // formatAndLog tracks routing statistics for this mock router.
@@ -86,7 +74,7 @@ func (fl *routeCountingFormatLogger) formatAndLog(data map[string]interface{}) {
 	}
 	for _, route := range routes.([]map[string]interface{}) {
 		rule := route["rule"].(string)
-		fl.routeMatches[rule] = append(fl.routeMatches[rule], data)
+		fl.routeMatches[rule] = append(fl.routeMatches[rule], route)
 	}
 }
 
