@@ -1,5 +1,5 @@
 {
-  "description": "Last modified: 12/12/2016",
+  "description": "Last modified: 01/04/2017",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -9,7 +9,7 @@
       "type": "object",
       "additionalProperties": false,
       "patternProperties": {
-        "^[^%\\${}]+$": { "$ref": "#/definitions/rule" }
+        "^[a-zA-Z0-9-_]+$": { "$ref": "#/definitions/rule" }
       }
     },
     "rule": {
