@@ -3,7 +3,7 @@
 package router
 
 var routerSchema = `{
-  "description": "Last modified: 12/12/2016",
+  "description": "Last modified: 01/18/2017",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -13,7 +13,7 @@ var routerSchema = `{
       "type": "object",
       "additionalProperties": false,
       "patternProperties": {
-        "^[^%\\${}]+$": { "$ref": "#/definitions/rule" }
+        "^[a-zA-Z0-9-_]+$": { "$ref": "#/definitions/rule" }
       }
     },
     "rule": {
@@ -46,35 +46,53 @@ var routerSchema = `{
     "metricsOutput": {
       "title": "Metrics Output",
       "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "series", "dimensions"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "pattern": "^metrics$"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["type", "series", "dimensions"],
+          "properties": {
+            "type": { "type": "string", "pattern": "^metrics$" },
+            "series": { "$ref": "#/definitions/envVarSubstValue" },
+            "dimensions": { "$ref": "#/definitions/flatValueArr" }
+          }
         },
-        "series": { "$ref": "#/definitions/envVarSubstValue" },
-        "dimensions": { "$ref": "#/definitions/flatValueArr" },
-        "value": { "$ref": "#/definitions/flatValue" }
-      }
+        {
+          "additionalProperties": false,
+          "required": ["type", "series", "dimensions", "value_field"],
+          "properties": {
+            "type": { "type": "string", "pattern": "^metrics$" },
+            "series": { "$ref": "#/definitions/envVarSubstValue" },
+            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "value_field": { "$ref": "#/definitions/flatValue" }
+          }
+        }
+      ]
     },
     "alertsOutput": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "series", "dimensions", "stat_type"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "pattern": "^alerts$"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["type", "series", "dimensions", "stat_type"],
+          "properties": {
+            "type": { "type": "string", "pattern": "^alerts$" },
+            "series": { "$ref": "#/definitions/envVarSubstValue" },
+            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "stat_type": { "type": "string", "enum": ["counter", "gauge"] }
+          }
         },
-        "series": { "$ref": "#/definitions/envVarSubstValue" },
-        "dimensions": { "$ref": "#/definitions/flatValueArr" },
-        "value": { "$ref": "#/definitions/flatValue" },
-        "stat_type": {
-          "type": "string",
-          "enum": ["counter", "gauge"]
+        {
+          "additionalProperties": false,
+          "required": ["type", "series", "dimensions", "stat_type", "value_field"],
+          "properties": {
+            "type": { "type": "string", "pattern": "^alerts$" },
+            "series": { "$ref": "#/definitions/envVarSubstValue" },
+            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "stat_type": { "type": "string", "enum": ["counter", "gauge"] },
+            "value_field": { "$ref": "#/definitions/flatValue" }
+          }
         }
-      }
+      ]
     },
     "analyticsOutput": {
       "type": "object",

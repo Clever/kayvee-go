@@ -17,6 +17,24 @@ func init() {
 	}
 }
 
+func setDefaults(output map[string]interface{}) map[string]interface{} {
+	otype, ok := output["type"].(string)
+	if !ok {
+		return output
+	}
+
+	switch otype {
+	case "metrics":
+		fallthrough
+	case "alerts":
+		if _, ok := output["value_field"]; !ok {
+			output["value_field"] = "value"
+		}
+	}
+
+	return output
+}
+
 // Route returns routing metadata for the log line `msg`. The outputs (with
 // variable substitutions performed) for each rule matched are placed under the
 // "routes" key.
@@ -79,6 +97,7 @@ func NewFromRoutes(routes map[string]Rule) (Router, error) {
 		if err != nil {
 			return router, err
 		}
+		output = setDefaults(output)
 
 		rule.Name = name
 		rule.Output = output

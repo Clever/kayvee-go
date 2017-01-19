@@ -44,6 +44,16 @@ routes:
       series: "other-series"
       dimensions: ["baz"]
       stat_type: "gauge"
+  rule-three:
+    matchers:
+      foo.bar: ["multiple", "matches"]
+      baz: ["whatever"]
+    output:
+      type: "alerts"
+      series: "other-series"
+      dimensions: ["baz"]
+      stat_type: "counter"
+      value_field: "hello"
 `)
 	expected := SortableRules{
 		Rule{
@@ -64,10 +74,25 @@ routes:
 				"baz":     []string{"whatever"},
 			},
 			Output: RuleOutput{
-				"type":       "alerts",
-				"series":     "other-series",
-				"dimensions": []interface{}{"baz"},
-				"stat_type":  "gauge",
+				"type":        "alerts",
+				"series":      "other-series",
+				"dimensions":  []interface{}{"baz"},
+				"stat_type":   "gauge",
+				"value_field": "value",
+			},
+		},
+		Rule{
+			Name: "rule-three",
+			Matchers: RuleMatchers{
+				"foo.bar": []string{"multiple", "matches"},
+				"baz":     []string{"whatever"},
+			},
+			Output: RuleOutput{
+				"type":        "alerts",
+				"series":      "other-series",
+				"dimensions":  []interface{}{"baz"},
+				"stat_type":   "counter",
+				"value_field": "hello",
 			},
 		},
 	}
@@ -240,7 +265,7 @@ routes:
       type: "alerts"
       series: %s
       dimensions: %s
-      value: "hello"
+      value_field: "hello"
       stat_type: "gauge"
 `
 
@@ -288,7 +313,7 @@ routes:
     output:
       type: "metrics"%s
       dimensions: ["dim1", "dim2"]
-      value: "hihi"
+      value_field: "hihi"
 `
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `
