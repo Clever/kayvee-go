@@ -1,20 +1,18 @@
 machine:
   post:
-  - cd $HOME && git clone --depth 1 -v git@github.com:clever/ci-scripts.git && cd ci-scripts && git show --oneline -s
+  - cd $HOME && git clone --branch master --depth 1 -v git@github.com:clever/ci-scripts.git && cd ci-scripts && git show --oneline -s
   - $HOME/ci-scripts/circleci/golang-install 1.7
+  - mkdir -p $HOME/.go_workspace/src/gopkg.in/Clever/kayvee-go.v6
   services:
   - docker
 checkout:
   post:
-  - $HOME/ci-scripts/circleci/golang-move-project
+  - $HOME/ci-scripts/circleci/golang-move-project gopkg.in/Clever/kayvee-go.v6
 test:
   override:
-  #- mkdir -p $GOPATH/src/gopkg.in/Clever
-  #- mv `pwd` $GOPATH/src/gopkg.in/Clever/kayvee-go.v6
-  #- cd $GOPATH/src/gopkg.in/Clever/kayvee-go.v6
   - make test
   - make benchmarks
   post:
   - $HOME/ci-scripts/circleci/report-card $RC_DOCKER_USER $RC_DOCKER_PASS "$RC_DOCKER_EMAIL" $RC_GITHUB_TOKEN
 general:
-  build_dir: ../.go_workspace/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+  build_dir: ../.go_workspace/src/gopkg.in/Clever/kayvee-go.v6
