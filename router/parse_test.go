@@ -54,6 +54,16 @@ routes:
       dimensions: ["baz"]
       stat_type: "counter"
       value_field: "hello"
+  rule-four:
+    matchers:
+      foo.bar: ["multiple", "matches"]
+      baz: ["whatever"]
+    output:
+      type: "alerts"
+      series: "other-series"
+      dimensions: []
+      stat_type: "counter"
+
 `)
 	expected := SortableRules{
 		Rule{
@@ -93,6 +103,20 @@ routes:
 				"dimensions":  []interface{}{"baz"},
 				"stat_type":   "counter",
 				"value_field": "hello",
+			},
+		},
+		Rule{
+			Name: "rule-four",
+			Matchers: RuleMatchers{
+				"foo.bar": []string{"multiple", "matches"},
+				"baz":     []string{"whatever"},
+			},
+			Output: RuleOutput{
+				"type":        "alerts",
+				"series":      "other-series",
+				"dimensions":  []interface{}{},
+				"stat_type":   "counter",
+				"value_field": "value",
 			},
 		},
 	}
