@@ -1,5 +1,5 @@
 {
-  "description": "Last modified: 01/18/2017",
+  "description": "Last modified: 02/06/2017",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -73,7 +73,11 @@
           "properties": {
             "type": { "type": "string", "pattern": "^alerts$" },
             "series": { "$ref": "#/definitions/envVarSubstValue" },
-            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "dimensions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/definitions/flatValue" }
+            },
             "stat_type": { "type": "string", "enum": ["counter", "gauge"] }
           }
         },
@@ -83,7 +87,11 @@
           "properties": {
             "type": { "type": "string", "pattern": "^alerts$" },
             "series": { "$ref": "#/definitions/envVarSubstValue" },
-            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "dimensions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/definitions/flatValue" }
+            },
             "stat_type": { "type": "string", "enum": ["counter", "gauge"] },
             "value_field": { "$ref": "#/definitions/flatValue" }
           }

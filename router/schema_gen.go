@@ -77,7 +77,11 @@ var routerSchema = `{
           "properties": {
             "type": { "type": "string", "pattern": "^alerts$" },
             "series": { "$ref": "#/definitions/envVarSubstValue" },
-            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "dimensions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/definitions/flatValue" }
+            },
             "stat_type": { "type": "string", "enum": ["counter", "gauge"] }
           }
         },
@@ -87,7 +91,11 @@ var routerSchema = `{
           "properties": {
             "type": { "type": "string", "pattern": "^alerts$" },
             "series": { "$ref": "#/definitions/envVarSubstValue" },
-            "dimensions": { "$ref": "#/definitions/flatValueArr" },
+            "dimensions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/definitions/flatValue" }
+            },
             "stat_type": { "type": "string", "enum": ["counter", "gauge"] },
             "value_field": { "$ref": "#/definitions/flatValue" }
           }
