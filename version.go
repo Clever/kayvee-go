@@ -3,4 +3,4 @@
 package kayvee
 
 // Version is a string containing the version of this library.
-var Version = "6.5.2"
+var Version = "6.5.3"
