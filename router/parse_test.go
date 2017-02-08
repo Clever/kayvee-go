@@ -63,7 +63,15 @@ routes:
       series: "other-series"
       dimensions: []
       stat_type: "counter"
-
+  rule-five:
+    matchers:
+      foo.bar: [true]
+      baz: [false]
+    output:
+      type: "alerts"
+      series: "other-series"
+      dimensions: []
+      stat_type: "gauge"
 `)
 	expected := SortableRules{
 		Rule{
@@ -116,6 +124,20 @@ routes:
 				"series":      "other-series",
 				"dimensions":  []interface{}{},
 				"stat_type":   "counter",
+				"value_field": "value",
+			},
+		},
+		Rule{
+			Name: "rule-five",
+			Matchers: RuleMatchers{
+				"foo.bar": []string{"true"},
+				"baz":     []string{"false"},
+			},
+			Output: RuleOutput{
+				"type":        "alerts",
+				"series":      "other-series",
+				"dimensions":  []interface{}{},
+				"stat_type":   "gauge",
 				"value_field": "value",
 			},
 		},
