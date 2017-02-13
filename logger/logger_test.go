@@ -255,6 +255,7 @@ func TestRouter(t *testing.T) {
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
 
+	t.Log("if Route() returns routes, the should be logged under _kvmeta field")
 	m := MockRouter{t, false, map[string]interface{}{"routekey": 42}}
 	logger.SetRouter(&m)
 	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
@@ -263,6 +264,23 @@ func TestRouter(t *testing.T) {
 		"key1":    "val1",
 		"key2":    "val2",
 		"_kvmeta": M{"routekey": 42},
+	})
+	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
+}
+
+func TestRouterNoRoutes(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+
+	t.Log("if Route() returns no routes, _kvmeta field should not be added")
+	m := MockRouter{t, false, map[string]interface{}{}}
+	logger.SetRouter(&m)
+	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assert.True(t, m.called)
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1": "val1",
+		"key2": "val2",
 	})
 	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
 }
