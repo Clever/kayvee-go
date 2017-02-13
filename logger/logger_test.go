@@ -245,8 +245,9 @@ func TestFailAddReservedContext(t *testing.T) {
 }
 
 type MockRouter struct {
-	t      *testing.T
-	called bool
+	t              *testing.T
+	called         bool
+	routesToReturn map[string]interface{}
 }
 
 func TestRouter(t *testing.T) {
@@ -254,7 +255,7 @@ func TestRouter(t *testing.T) {
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
 
-	m := MockRouter{t, false}
+	m := MockRouter{t, false, map[string]interface{}{"routekey": 42}}
 	logger.SetRouter(&m)
 	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assert.True(t, m.called)
@@ -265,6 +266,7 @@ func TestRouter(t *testing.T) {
 	})
 	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
 }
+
 func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	assert.False(m.t, m.called)
 	m.called = true
@@ -273,7 +275,7 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		"key2": "val2",
 	})
 	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
-	return map[string]interface{}{"routekey": 42}
+	return m.routesToReturn
 }
 
 func TestLoggerImplementsKayveeLogger(t *testing.T) {
