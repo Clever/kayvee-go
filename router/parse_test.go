@@ -31,7 +31,7 @@ routes:
       title: ["authorize-app", true]
     output:
       type: "notifications"
-      channel: "#team"
+      channel: "%{foo.bar}"
       icon: ":rocket:"
       message: "authorized %{foo.bar} in ${SCHOOL}"
       user: "@fishman"
@@ -79,7 +79,7 @@ routes:
 			Matchers: RuleMatchers{"title": []string{"authorize-app", "true"}},
 			Output: RuleOutput{
 				"type":    "notifications",
-				"channel": "#team",
+				"channel": `%{foo.bar}`,
 				"icon":    ":rocket:",
 				"message": `authorized %{foo.bar} in Hogwarts`,
 				"user":    "@fishman",
