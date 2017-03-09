@@ -119,7 +119,7 @@
           "type": "string",
           "pattern": "^notifications$"
         },
-        "channel": { "$ref": "#/definitions/envVarSubstValue" },
+        "channel": { "$ref": "#/definitions/kvSubstValue" },
         "icon": { "$ref": "#/definitions/envVarSubstValue" },
         "message": { "$ref": "#/definitions/kvSubstValue" },
         "user": { "$ref": "#/definitions/envVarSubstValue" }

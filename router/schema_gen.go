@@ -3,7 +3,7 @@
 package router
 
 var routerSchema = `{
-  "description": "Last modified: 01/18/2017",
+  "description": "Last modified: 02/08/2017",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -31,7 +31,7 @@ var routerSchema = `{
       "minProperties": 1,
       "additionalProperties": false,
       "patternProperties": {
-        "^[^%\\${}]+$": { "$ref": "#/definitions/flatValueArr" }
+        "^[^%\\${}]+$": { "$ref": "#/definitions/matcherArr" }
       }
     },
     "output": {
@@ -123,7 +123,7 @@ var routerSchema = `{
           "type": "string",
           "pattern": "^notifications$"
         },
-        "channel": { "$ref": "#/definitions/envVarSubstValue" },
+        "channel": { "$ref": "#/definitions/kvSubstValue" },
         "icon": { "$ref": "#/definitions/envVarSubstValue" },
         "message": { "$ref": "#/definitions/kvSubstValue" },
         "user": { "$ref": "#/definitions/envVarSubstValue" }
@@ -138,6 +138,17 @@ var routerSchema = `{
       "minItems": 1,
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/flatValue" }
+    },
+    "matcherArr": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/flatValue" },
+          { "type": "boolean" }
+        ]
+      }
     },
     "envVarSubstValue": {
       "type": "string",
