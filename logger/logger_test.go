@@ -245,8 +245,9 @@ func TestFailAddReservedContext(t *testing.T) {
 }
 
 type MockRouter struct {
-	t      *testing.T
-	called bool
+	t              *testing.T
+	called         bool
+	routesToReturn map[string]interface{}
 }
 
 func TestRouter(t *testing.T) {
@@ -254,7 +255,8 @@ func TestRouter(t *testing.T) {
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
 
-	m := MockRouter{t, false}
+	t.Log("if Route() returns routes, the should be logged under _kvmeta field")
+	m := MockRouter{t, false, map[string]interface{}{"routekey": 42}}
 	logger.SetRouter(&m)
 	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assert.True(t, m.called)
@@ -265,6 +267,24 @@ func TestRouter(t *testing.T) {
 	})
 	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
 }
+
+func TestRouterNoRoutes(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+
+	t.Log("if Route() returns no routes, _kvmeta field should not be added")
+	m := MockRouter{t, false, map[string]interface{}{}}
+	logger.SetRouter(&m)
+	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assert.True(t, m.called)
+	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
+		"key1": "val1",
+		"key2": "val2",
+	})
+	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
+}
+
 func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	assert.False(m.t, m.called)
 	m.called = true
@@ -273,7 +293,7 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		"key2": "val2",
 	})
 	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
-	return map[string]interface{}{"routekey": 42}
+	return m.routesToReturn
 }
 
 func TestLoggerImplementsKayveeLogger(t *testing.T) {

@@ -249,10 +249,15 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		}
 		data[key] = value
 	}
+
+	var routes map[string]interface{}
 	if l.logRouter != nil {
-		data["_kvmeta"] = l.logRouter.Route(data)
+		routes = l.logRouter.Route(data)
 	} else if globalRouter != nil {
-		data["_kvmeta"] = globalRouter.Route(data)
+		routes = globalRouter.Route(data)
+	}
+	if len(routes) > 0 {
+		data["_kvmeta"] = routes
 	}
 
 	l.fLogger.formatAndLog(data)
