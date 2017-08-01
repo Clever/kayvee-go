@@ -74,7 +74,7 @@ routes:
       user: "The Data Duck"
 ```
 
-For more information see https://clever.atlassian.net/wiki/display/ENG/Log+Routing
+For more information see https://clever.atlassian.net/wiki/display/ENG/Application+Log+Routing
 
 ## Testing
 
