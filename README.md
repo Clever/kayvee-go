@@ -120,6 +120,10 @@ func TestDataResultsRouting(t *testing.T) {
 }
 ```
 
+### Testing Slack notifications in stage
+
+Slack messages in the `clever-dev` environment are routed to a separate Slack team called clever-test. To see your dev notifications, create an account on https://clever-test.slack.com/ and create the slack channel your notifications should appear in.
+
 
 ## Change log
 
