@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	kv "gopkg.in/Clever/kayvee-go.v6"
+	"gopkg.in/Clever/kayvee-go.v6/embeddedoutputs"
 	"gopkg.in/Clever/kayvee-go.v6/router"
 )
 
@@ -255,7 +256,16 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		data["_kvmeta"] = globalRouter.Route(data)
 	}
 
-	l.fLogger.formatAndLog(data)
+	// call any embedded outputs
+	routedLocally, err := embeddedoutputs.Route(data)
+	if err != nil {
+		l.ErrorD("embedded-output-error", map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if !routedLocally {
+		l.fLogger.formatAndLog(data)
+	}
 }
 
 // updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.

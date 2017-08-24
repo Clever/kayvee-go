@@ -40,8 +40,24 @@ var routerSchema = `{
         { "$ref": "#/definitions/metricsOutput" },
         { "$ref": "#/definitions/alertsOutput" },
         { "$ref": "#/definitions/analyticsOutput" },
-        { "$ref": "#/definitions/notificationsOutput" }
+        { "$ref": "#/definitions/notificationsOutput" },
+        { "$ref": "#/definitions/rollupOutput" }
       ]
+    },
+    "rollupOutput": {
+      "title": "Rollup Output",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "source", "title", "dimensions"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^log-rollup$"
+        },
+        "source": { "type": "string" },
+        "title": { "type": "string" },
+        "dimensions": { "$ref": "#/definitions/flatValueArr" }
+      }
     },
     "metricsOutput": {
       "title": "Metrics Output",
