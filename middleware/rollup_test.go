@@ -72,8 +72,8 @@ func TestRollups(t *testing.T) {
 	} {
 		var wg sync.WaitGroup
 		for i := 0; i < 100; i++ {
+			wg.Add(1)
 			go func(msg logmsg) {
-				wg.Add(1)
 				defer wg.Done()
 				rr.Process(map[string]interface{}{
 					"status-code":   msg.StatusCode,
