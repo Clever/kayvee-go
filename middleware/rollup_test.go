@@ -16,7 +16,6 @@ type RollupLoggerCall struct {
 
 type MockRollupLogger struct {
 	mu          sync.Mutex
-	calls       []RollupLoggerCall
 	infoDCalls  []RollupLoggerCall
 	errorDCalls []RollupLoggerCall
 }
@@ -25,16 +24,34 @@ func (m *MockRollupLogger) InfoD(title string, data map[string]interface{}) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	call := RollupLoggerCall{title, data}
-	m.calls = append(m.calls, call)
 	m.infoDCalls = append(m.infoDCalls, call)
+}
+
+func (m *MockRollupLogger) InfoDCalls() []RollupLoggerCall {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var calls []RollupLoggerCall
+	for _, call := range m.infoDCalls {
+		calls = append(calls, call)
+	}
+	return calls
 }
 
 func (m *MockRollupLogger) ErrorD(title string, data map[string]interface{}) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	call := RollupLoggerCall{title, data}
-	m.calls = append(m.calls, call)
 	m.errorDCalls = append(m.errorDCalls, call)
+}
+
+func (m *MockRollupLogger) ErrorDCalls() []RollupLoggerCall {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var calls []RollupLoggerCall
+	for _, call := range m.errorDCalls {
+		calls = append(calls, call)
+	}
+	return calls
 }
 
 func TestRollups(t *testing.T) {
@@ -85,9 +102,9 @@ func TestRollups(t *testing.T) {
 		}
 		wg.Wait()
 	}
-	time.Sleep(reportingDelay + 100*time.Millisecond) // check after reporting delay
+	time.Sleep(reportingDelay + 500*time.Millisecond) // check after reporting delay
 
-	assert.Equal(t, mockLogger.errorDCalls, []RollupLoggerCall{
+	assert.Equal(t, mockLogger.ErrorDCalls(), []RollupLoggerCall{
 		{
 			Title: "request-finished-rollup",
 			Data: map[string]interface{}{
@@ -101,7 +118,7 @@ func TestRollups(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, mockLogger.infoDCalls, []RollupLoggerCall{
+	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
 		{
 			Title: "request-finished-rollup",
 			Data: map[string]interface{}{
