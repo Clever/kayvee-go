@@ -19,15 +19,16 @@ type RollupLogger interface {
 }
 
 // EnableRollups turns on rollups for kv middleware logs.
-func EnableRollups(ctx context.Context, logger RollupLogger) {
-	globalRollupRouter = NewRollupRouter(ctx, logger)
+func EnableRollups(ctx context.Context, logger RollupLogger, reportingInterval time.Duration) {
+	globalRollupRouter = NewRollupRouter(ctx, logger, reportingInterval)
 }
 
 // RollupRouter rolls up log lines and periodically logs them as one log line.
 type RollupRouter struct {
-	logger  RollupLogger
-	ctx     context.Context
-	ctxDone bool
+	logger         RollupLogger
+	reportingDelay time.Duration
+	ctx            context.Context
+	ctxDone        bool
 
 	// create a rollup object per unique (status-code, path) pair
 	rollupsMu sync.Mutex
@@ -36,12 +37,13 @@ type RollupRouter struct {
 
 // NewRollupRouter creates a new log rollup output.
 // Rollups will stop when the context is canceled.
-func NewRollupRouter(ctx context.Context, logger RollupLogger) *RollupRouter {
+func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay time.Duration) *RollupRouter {
 	l := &RollupRouter{
-		logger:  logger,
-		rollups: map[string]*logRollup{},
-		ctx:     ctx,
-		ctxDone: false,
+		logger:         logger,
+		reportingDelay: reportingDelay,
+		rollups:        map[string]*logRollup{},
+		ctx:            ctx,
+		ctxDone:        false,
 	}
 	go func() {
 		select {
@@ -88,10 +90,10 @@ func (r *RollupRouter) findOrCreate(statusCode int, path string, canary bool) *l
 	}
 	rollup := &logRollup{
 		Logger:           r.logger,
+		ReportingDelayNs: (r.reportingDelay).Nanoseconds(),
 		StatusCode:       statusCode,
 		Path:             path,
 		Canary:           canary,
-		ReportingDelayNs: (time.Second * 20).Nanoseconds(), // todo: make configurable
 	}
 	r.rollups[rollupKey] = rollup
 	go rollup.schedule(r.ctx)
@@ -101,27 +103,31 @@ func (r *RollupRouter) findOrCreate(statusCode int, path string, canary bool) *l
 // logRollup represents a single rollup.
 type logRollup struct {
 	Logger           RollupLogger
+	ReportingDelayNs int64
 	StatusCode       int
 	Path             string
 	Canary           bool
-	ReportingDelayNs int64
 
-	rollupMsgMu sync.Mutex
-	rollupMsg   map[string]interface{}
+	rollupMu                sync.Mutex
+	rollupMsg               map[string]interface{}
+	rollupResponseTimeNsSum int64
 }
 
 func (r *logRollup) report() {
-	r.rollupMsgMu.Lock()
-	defer r.rollupMsgMu.Unlock()
+	r.rollupMu.Lock()
+	defer r.rollupMu.Unlock()
 	if r.rollupMsg != nil {
+		r.rollupMsg["response-time-sum"] = r.rollupResponseTimeNsSum
+		r.rollupMsg["response-time"] = r.rollupResponseTimeNsSum / r.rollupMsg["count"].(int64)
 		switch logLevelFromStatus(r.StatusCode) {
 		case logger.Error:
-			r.Logger.ErrorD("request-finished", r.rollupMsg)
+			r.Logger.ErrorD("request-finished-rollup", r.rollupMsg)
 		default:
-			r.Logger.InfoD("request-finished", r.rollupMsg)
+			r.Logger.InfoD("request-finished-rollup", r.rollupMsg)
 		}
+		r.rollupMsg = nil
+		r.rollupResponseTimeNsSum = 0
 	}
-	r.rollupMsg = nil
 }
 
 func (r *logRollup) schedule(ctx context.Context) {
@@ -146,8 +152,8 @@ func (r *logRollup) schedule(ctx context.Context) {
 }
 
 func (r *logRollup) add(logmsg map[string]interface{}) {
-	r.rollupMsgMu.Lock()
-	defer r.rollupMsgMu.Unlock()
+	r.rollupMu.Lock()
+	defer r.rollupMu.Unlock()
 
 	if r.rollupMsg == nil {
 		r.rollupMsg = map[string]interface{}{
@@ -160,5 +166,5 @@ func (r *logRollup) add(logmsg map[string]interface{}) {
 	}
 
 	r.rollupMsg["count"] = r.rollupMsg["count"].(int64) + 1
-	// TODO: allow users to perform additional numeric rollups, e.g. if there's a field `response-time`, let them average it
+	r.rollupResponseTimeNsSum += logmsg["response-time"].(time.Duration).Nanoseconds()
 }
