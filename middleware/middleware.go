@@ -56,6 +56,12 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		"canary":        l.isCanary,
 	})
 
+	// check if the user has opted in to rolling up middleware logs
+	if globalRollupRouter != nil {
+		globalRollupRouter.Process(data)
+		return
+	}
+
 	switch logLevelFromStatus(lrw.status) {
 	case logger.Error:
 		lggr.ErrorD("request-finished", data)
