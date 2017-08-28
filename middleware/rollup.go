@@ -30,7 +30,7 @@ type RollupRouter struct {
 	ctx            context.Context
 	ctxDone        bool
 
-	// create a rollup object per unique (status-code, path) pair
+	// create a rollup object per unique (status-code, op) pair
 	rollupsMu sync.Mutex
 	rollups   map[string]*logRollup
 }
@@ -59,6 +59,11 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 
 // ShouldRollup returns true when a log msg meets the criteria for rollup.
 func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
+	_, ok := logmsg["op"].(string)
+	if !ok {
+		return false
+	}
+
 	statusCode, ok := logmsg["status-code"].(int)
 	if !ok {
 		return false
@@ -87,7 +92,7 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if !ok {
 		return
 	}
-	path, ok := logmsg["path"].(string)
+	op, ok := logmsg["op"].(string)
 	if !ok {
 		return
 	}
@@ -95,13 +100,13 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if !ok {
 		return
 	}
-	r.findOrCreate(statusCode, path, canary).add(logmsg)
+	r.findOrCreate(statusCode, op, canary).add(logmsg)
 }
 
-func (r *RollupRouter) findOrCreate(statusCode int, path string, canary bool) *logRollup {
+func (r *RollupRouter) findOrCreate(statusCode int, op string, canary bool) *logRollup {
 	r.rollupsMu.Lock()
 	defer r.rollupsMu.Unlock()
-	rollupKey := fmt.Sprintf("%d-%s", statusCode, path)
+	rollupKey := fmt.Sprintf("%d-%s", statusCode, op)
 	if canary {
 		rollupKey += "-canary"
 	}
@@ -112,7 +117,7 @@ func (r *RollupRouter) findOrCreate(statusCode int, path string, canary bool) *l
 		Logger:           r.logger,
 		ReportingDelayNs: (r.reportingDelay).Nanoseconds(),
 		StatusCode:       statusCode,
-		Path:             path,
+		Op:               op,
 		Canary:           canary,
 	}
 	r.rollups[rollupKey] = rollup
@@ -125,7 +130,7 @@ type logRollup struct {
 	Logger           RollupLogger
 	ReportingDelayNs int64
 	StatusCode       int
-	Path             string
+	Op               string
 	Canary           bool
 
 	rollupMu                sync.Mutex
@@ -179,7 +184,7 @@ func (r *logRollup) add(logmsg map[string]interface{}) {
 	if r.rollupMsg == nil {
 		r.rollupMsg = map[string]interface{}{
 			"status-code": r.StatusCode,
-			"path":        r.Path,
+			"op":          r.Op,
 			"count":       int64(0),
 			"canary":      r.Canary,
 			"via":         "kayvee-middleware",
