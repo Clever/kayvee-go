@@ -68,7 +68,7 @@ func TestProcess(t *testing.T) {
 			defer wg.Done()
 			rr.Process(map[string]interface{}{
 				"status-code":   200,
-				"path":          "/healthcheck",
+				"op":            "healthCheck",
 				"canary":        false,
 				"response-time": 100 * time.Millisecond,
 			})
@@ -85,7 +85,7 @@ func TestProcess(t *testing.T) {
 			Data: map[string]interface{}{
 				"canary":               false,
 				"count":                int64(100),
-				"path":                 "/healthcheck",
+				"op":                   "healthCheck",
 				"response-time-ms":     int64(100),
 				"response-time-ms-sum": int64(100 * 100),
 				"status-code":          200,
@@ -101,18 +101,25 @@ func TestShouldRollup(t *testing.T) {
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
 
 	// if a request is a 200 or is too slow, it should not get rolled up
+	// additionally, there needs to be an "op" field
 	for _, falseyInput := range []map[string]interface{}{
 		map[string]interface{}{
 			"status-code":   200,
-			"path":          "/",
+			"op":            "getApps",
 			"canary":        true,
 			"response-time": 600 * time.Millisecond, // too slow
 		},
 		map[string]interface{}{
 			"status-code":   500, // not a 200
-			"path":          "/",
+			"op":            "getApps",
 			"canary":        true,
 			"response-time": 100 * time.Millisecond,
+		},
+		map[string]interface{}{
+			"status-code": 200,
+			// no op field
+			"canary":        true,
+			"response-time": 50 * time.Millisecond,
 		},
 	} {
 		assert.Equal(t, rr.ShouldRollup(falseyInput), false, "expected false return: %v", falseyInput)
@@ -122,13 +129,13 @@ func TestShouldRollup(t *testing.T) {
 	for _, truthyInput := range []map[string]interface{}{
 		map[string]interface{}{
 			"status-code":   200,
-			"path":          "/bar",
+			"op":            "getAppByID",
 			"canary":        true,
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
 			"status-code":   200,
-			"path":          "/foo",
+			"op":            "getAdminByID",
 			"canary":        true,
 			"response-time": 400 * time.Millisecond,
 		},
