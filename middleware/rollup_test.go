@@ -95,7 +95,7 @@ func TestProcess(t *testing.T) {
 	})
 }
 
-func TestRollup(t *testing.T) {
+func TestShouldRollup(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
 	reportingDelay := 1 * time.Second
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
@@ -115,7 +115,7 @@ func TestRollup(t *testing.T) {
 			"response-time": 100 * time.Millisecond,
 		},
 	} {
-		assert.Equal(t, rr.Rollup(falseyInput), false, "expected false return: %v", falseyInput)
+		assert.Equal(t, rr.ShouldRollup(falseyInput), false, "expected false return: %v", falseyInput)
 	}
 
 	// 200s that are fast enough should get rolled up
@@ -133,6 +133,6 @@ func TestRollup(t *testing.T) {
 			"response-time": 400 * time.Millisecond,
 		},
 	} {
-		assert.Equal(t, rr.Rollup(truthyInput), true, "expected true return: %v", truthyInput)
+		assert.Equal(t, rr.ShouldRollup(truthyInput), true, "expected true return: %v", truthyInput)
 	}
 }

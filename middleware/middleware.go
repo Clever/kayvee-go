@@ -57,7 +57,7 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	})
 
 	// check if the user has opted in to rolling up middleware logs
-	if globalRollupRouter != nil && globalRollupRouter.Rollup(data) {
+	if globalRollupRouter != nil && globalRollupRouter.ShouldRollup(data) {
 		globalRollupRouter.Process(data)
 		return
 	}
