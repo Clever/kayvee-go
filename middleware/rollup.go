@@ -57,7 +57,26 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 	return l
 }
 
-// Process a log message to roll up.
+// Rollup returns true when a log msg meets the criteria for rollup.
+func (r *RollupRouter) Rollup(logmsg map[string]interface{}) bool {
+	statusCode, ok := logmsg["status-code"].(int)
+	if !ok {
+		return false
+	}
+
+	responseTime, ok := logmsg["response-time"].(time.Duration)
+	if !ok {
+		return false
+	}
+
+	// in the future allow more configurability, for now default to 200s and < 500ms
+	if statusCode == 200 && responseTime < 500*time.Millisecond {
+		return true
+	}
+
+	return false
+}
+
 func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if r.ctxDone {
 		return

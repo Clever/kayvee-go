@@ -54,83 +54,32 @@ func (m *MockRollupLogger) ErrorDCalls() []RollupLoggerCall {
 	return calls
 }
 
-func TestRollups(t *testing.T) {
+func TestProcess(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
 	reportingDelay := 1 * time.Second
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
 
 	// send a bunch of data to the rollup router in parallel (since logging can
 	// happen from multiple goroutines) and you should see it logged as a rollup
-	type logmsg struct {
-		StatusCode   int
-		Path         string
-		Canary       bool
-		ResponseTime time.Duration
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rr.Process(map[string]interface{}{
+				"status-code":   200,
+				"path":          "/healthcheck",
+				"canary":        false,
+				"response-time": 100 * time.Millisecond,
+			})
+		}()
 	}
-	for _, msg := range []logmsg{
-		{
-			StatusCode:   500,
-			Path:         "/servererror",
-			Canary:       false,
-			ResponseTime: 1000 * time.Millisecond,
-		},
-		{
-			StatusCode:   404,
-			Path:         "/notfound",
-			Canary:       false,
-			ResponseTime: 10 * time.Millisecond,
-		},
-		{
-			StatusCode:   200,
-			Path:         "/healthcheck",
-			Canary:       false,
-			ResponseTime: 100 * time.Millisecond,
-		},
-	} {
-		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func(msg logmsg) {
-				defer wg.Done()
-				rr.Process(map[string]interface{}{
-					"status-code":   msg.StatusCode,
-					"path":          msg.Path,
-					"canary":        msg.Canary,
-					"response-time": msg.ResponseTime,
-				})
-			}(msg)
-		}
-		wg.Wait()
-	}
-	time.Sleep(reportingDelay + 500*time.Millisecond) // check after reporting delay
+	wg.Wait()
 
-	assert.Equal(t, mockLogger.ErrorDCalls(), []RollupLoggerCall{
-		{
-			Title: "request-finished-rollup",
-			Data: map[string]interface{}{
-				"canary":            false,
-				"count":             int64(100),
-				"path":              "/servererror",
-				"response-time":     int64(1000000000),
-				"response-time-sum": int64(100000000000),
-				"status-code":       500,
-				"via":               "kayvee-middleware",
-			},
-		},
-	})
+	// check in shortly after reporting delay
+	time.Sleep(reportingDelay + 500*time.Millisecond)
+
 	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
-		{
-			Title: "request-finished-rollup",
-			Data: map[string]interface{}{
-				"canary":            false,
-				"count":             int64(100),
-				"path":              "/notfound",
-				"response-time":     int64(10000000),
-				"response-time-sum": int64(1000000000),
-				"status-code":       404,
-				"via":               "kayvee-middleware",
-			},
-		},
 		{
 			Title: "request-finished-rollup",
 			Data: map[string]interface{}{
@@ -144,4 +93,46 @@ func TestRollups(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestRollup(t *testing.T) {
+	mockLogger := &MockRollupLogger{}
+	reportingDelay := 1 * time.Second
+	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
+
+	// if a request is a 200 or is too slow, it should not get rolled up
+	for _, falseyInput := range []map[string]interface{}{
+		map[string]interface{}{
+			"status-code":   200,
+			"path":          "/",
+			"canary":        true,
+			"response-time": 600 * time.Millisecond, // too slow
+		},
+		map[string]interface{}{
+			"status-code":   500, // not a 200
+			"path":          "/",
+			"canary":        true,
+			"response-time": 100 * time.Millisecond,
+		},
+	} {
+		assert.Equal(t, rr.Rollup(falseyInput), false, "expected false return: %v", falseyInput)
+	}
+
+	// 200s that are fast enough should get rolled up
+	for _, truthyInput := range []map[string]interface{}{
+		map[string]interface{}{
+			"status-code":   200,
+			"path":          "/bar",
+			"canary":        true,
+			"response-time": 100 * time.Millisecond,
+		},
+		map[string]interface{}{
+			"status-code":   200,
+			"path":          "/foo",
+			"canary":        true,
+			"response-time": 400 * time.Millisecond,
+		},
+	} {
+		assert.Equal(t, rr.Rollup(truthyInput), true, "expected true return: %v", truthyInput)
+	}
 }
