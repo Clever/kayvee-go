@@ -130,15 +130,15 @@ type logRollup struct {
 
 	rollupMu                sync.Mutex
 	rollupMsg               map[string]interface{}
-	rollupResponseTimeNsSum int64
+	rollupResponseTimeMsSum int64
 }
 
 func (r *logRollup) report() {
 	r.rollupMu.Lock()
 	defer r.rollupMu.Unlock()
 	if r.rollupMsg != nil {
-		r.rollupMsg["response-time-sum"] = r.rollupResponseTimeNsSum
-		r.rollupMsg["response-time"] = r.rollupResponseTimeNsSum / r.rollupMsg["count"].(int64)
+		r.rollupMsg["response-time-ms-sum"] = r.rollupResponseTimeMsSum
+		r.rollupMsg["response-time-ms"] = r.rollupResponseTimeMsSum / r.rollupMsg["count"].(int64)
 		switch logLevelFromStatus(r.StatusCode) {
 		case logger.Error:
 			r.Logger.ErrorD("request-finished-rollup", r.rollupMsg)
@@ -146,7 +146,7 @@ func (r *logRollup) report() {
 			r.Logger.InfoD("request-finished-rollup", r.rollupMsg)
 		}
 		r.rollupMsg = nil
-		r.rollupResponseTimeNsSum = 0
+		r.rollupResponseTimeMsSum = 0
 	}
 }
 
@@ -186,5 +186,5 @@ func (r *logRollup) add(logmsg map[string]interface{}) {
 	}
 
 	r.rollupMsg["count"] = r.rollupMsg["count"].(int64) + 1
-	r.rollupResponseTimeNsSum += logmsg["response-time"].(time.Duration).Nanoseconds()
+	r.rollupResponseTimeMsSum += int64(logmsg["response-time"].(time.Duration) / time.Millisecond)
 }

@@ -83,13 +83,13 @@ func TestProcess(t *testing.T) {
 		{
 			Title: "request-finished-rollup",
 			Data: map[string]interface{}{
-				"canary":            false,
-				"count":             int64(100),
-				"path":              "/healthcheck",
-				"response-time":     int64(100000000),
-				"response-time-sum": int64(10000000000),
-				"status-code":       200,
-				"via":               "kayvee-middleware",
+				"canary":               false,
+				"count":                int64(100),
+				"path":                 "/healthcheck",
+				"response-time-ms":     int64(100),
+				"response-time-ms-sum": int64(100 * 100),
+				"status-code":          200,
+				"via":                  "kayvee-middleware",
 			},
 		},
 	})
