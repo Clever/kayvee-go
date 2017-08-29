@@ -109,6 +109,12 @@ func (l *Logger) AddContext(key, val string) {
 	updateContextMapIfNotReserved(l.globals, key, val)
 }
 
+// GetContext implements the method for the KayveeLogger interface.
+func (l *Logger) GetContext(key string) (interface{}, bool) {
+	val, ok := l.globals[key]
+	return val, ok
+}
+
 // SetRouter implements the method for the KayveeLogger interface.
 func (l *Logger) SetRouter(router router.Router) {
 	l.logRouter = router

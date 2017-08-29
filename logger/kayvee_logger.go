@@ -22,6 +22,9 @@ type KayveeLogger interface {
 	// AddContext adds a new key-val to be logged with all log messages.
 	AddContext(key, val string)
 
+	// GetContext reads a key-val from the global map of data that will be logged with all log messages.
+	GetContext(key string) (interface{}, bool)
+
 	// SetConfig allows configuration changes in one go
 	SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer)
 

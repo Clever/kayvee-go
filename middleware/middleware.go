@@ -18,12 +18,19 @@ import (
 )
 
 var defaultHandler = func(req *http.Request) map[string]interface{} {
-	return map[string]interface{}{
+	data := map[string]interface{}{
 		"method": req.Method,
 		"path":   req.URL.Path,
 		"params": req.URL.RawQuery,
 		"ip":     getIP(req),
 	}
+
+	// TODO: wag should inject metadata into the req context
+	// Then we wouldn't need to expose logger globals via GetContext
+	if op, ok := logger.FromContext(req.Context()).GetContext("op"); ok {
+		data["op"] = op
+	}
+	return data
 }
 
 type logHandler struct {
