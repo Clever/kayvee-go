@@ -36,6 +36,7 @@ func compareJSONStrings(t *testing.T, expected string, actual string) {
 	}
 
 	expectedJSON["deploy_env"] = "testing"
+	expectedJSON["workflow_id"] = "abc123"
 
 	assert.Equal(t, expectedJSON, actualJSON)
 }
