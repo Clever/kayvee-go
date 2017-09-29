@@ -69,7 +69,7 @@ func NewFromConfig(filename string) (Router, error) {
 		return nil, err
 	}
 
-	router, err := newFromConfigBytes(fileBytes)
+	router, err := NewFromConfigBytes(fileBytes)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"Error initializing kayvee log router from file '%s':\n%s",
@@ -79,7 +79,7 @@ func NewFromConfig(filename string) (Router, error) {
 	return router, nil
 }
 
-func newFromConfigBytes(fileBytes []byte) (Router, error) {
+func NewFromConfigBytes(fileBytes []byte) (Router, error) {
 	routes, err := parse(fileBytes)
 	if err != nil {
 		return &RuleRouter{}, err
