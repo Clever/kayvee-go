@@ -69,7 +69,7 @@ func NewFromConfig(filename string) (Router, error) {
 		return nil, err
 	}
 
-	router, err := newFromConfigBytes(fileBytes)
+	router, err := NewFromConfigBytes(fileBytes)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"Error initializing kayvee log router from file '%s':\n%s",
@@ -79,7 +79,13 @@ func NewFromConfig(filename string) (Router, error) {
 	return router, nil
 }
 
-func newFromConfigBytes(fileBytes []byte) (Router, error) {
+// NewFromConfigBytes constructs a Router using the configuration specified
+// as bytes typically read from a binary file. This allows us to
+// package kv routing yaml files into binaries like gearcmd.
+// The routing rules should be placed under the "routes" key on
+// the root-level map in the file. Validation is performed as described in
+// parse.go.
+func NewFromConfigBytes(fileBytes []byte) (Router, error) {
 	routes, err := parse(fileBytes)
 	if err != nil {
 		return &RuleRouter{}, err

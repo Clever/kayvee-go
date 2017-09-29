@@ -146,7 +146,7 @@ routes:
 	err := os.Setenv("SCHOOL", "Hogwarts")
 	assert.Nil(t, err)
 
-	router, err := newFromConfigBytes(conf)
+	router, err := NewFromConfigBytes(conf)
 	assert.Nil(t, err)
 
 	r, ok := router.(*RuleRouter)
@@ -170,12 +170,12 @@ routes:
 
 	// Make sure the template works
 	conf := []byte(fmt.Sprintf(confTmpl, "\"valid\""))
-	_, err := newFromConfigBytes(conf)
+	_, err := NewFromConfigBytes(conf)
 	assert.Nil(t, err)
 
 	for _, invalidVal := range []string{"5", "[]", "{}", `""`} {
 		conf := []byte(fmt.Sprintf(confTmpl, invalidVal))
-		_, err := newFromConfigBytes(conf)
+		_, err := NewFromConfigBytes(conf)
 		assert.Error(t, err)
 	}
 }
@@ -203,7 +203,7 @@ routes:
 	// Make sure templates work
 	for _, tmpl := range []string{confFieldTmpl, confValTmpl} {
 		conf := []byte(fmt.Sprintf(tmpl, "valid"))
-		_, err := newFromConfigBytes(conf)
+		_, err := NewFromConfigBytes(conf)
 		assert.Nil(t, err)
 	}
 
@@ -211,7 +211,7 @@ routes:
 	for _, invalid := range invalids {
 		for _, tmpl := range []string{confFieldTmpl, confValTmpl} {
 			conf := []byte(fmt.Sprintf(tmpl, invalid))
-			_, err := newFromConfigBytes(conf)
+			_, err := NewFromConfigBytes(conf)
 			assert.Error(t, err)
 		}
 	}
@@ -229,11 +229,11 @@ routes:
 `
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `"non-repeated", "name"`))
-	_, err := newFromConfigBytes(validConf)
+	_, err := NewFromConfigBytes(validConf)
 	assert.Nil(t, err)
 
 	invalidConf := []byte(fmt.Sprintf(confTmpl, `"repeated", "repeated", "name"`))
-	_, err = newFromConfigBytes(invalidConf)
+	_, err = NewFromConfigBytes(invalidConf)
 	assert.Error(t, err)
 }
 
@@ -249,7 +249,7 @@ route: # Shouldn't routes (plural)
       type: "analytics"
       series: "fun"
 `
-	_, err := newFromConfigBytes([]byte(config))
+	_, err := NewFromConfigBytes([]byte(config))
 	assert.Error(err)
 
 	config = `
@@ -261,7 +261,7 @@ routes:
       type: "analytics"
       series: "fun"
 `
-	_, err = newFromConfigBytes([]byte(config))
+	_, err = NewFromConfigBytes([]byte(config))
 	assert.Error(err)
 
 	config = `
@@ -273,7 +273,7 @@ routes:
       type: "analytics"
       series: "fun"
 `
-	_, err = newFromConfigBytes([]byte(config))
+	_, err = NewFromConfigBytes([]byte(config))
 	assert.Error(err)
 
 	config = `
@@ -285,7 +285,7 @@ routes:
       type: "analytics"
       series: "fun"
 `
-	_, err = newFromConfigBytes([]byte(config))
+	_, err = NewFromConfigBytes([]byte(config))
 	assert.Error(err)
 
 	config = `
@@ -297,7 +297,7 @@ routes:
       type: "analytics"
       series: "fun"
 `
-	_, err = newFromConfigBytes([]byte(config))
+	_, err = NewFromConfigBytes([]byte(config))
 	assert.Error(err)
 }
 
@@ -316,15 +316,15 @@ routes:
 `
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `"my-series"`, `["dim1", "dim2"]`))
-	_, err := newFromConfigBytes(validConf)
+	_, err := NewFromConfigBytes(validConf)
 	assert.Nil(t, err)
 
 	invalidConf0 := []byte(fmt.Sprintf(confTmpl, `["my-series"]`, `["dim1", "dim2"]`))
-	_, err = newFromConfigBytes(invalidConf0)
+	_, err = NewFromConfigBytes(invalidConf0)
 	assert.Error(t, err)
 
 	invalidConf1 := []byte(fmt.Sprintf(confTmpl, `"my-series"`, `"dim1"`))
-	_, err = newFromConfigBytes(invalidConf1)
+	_, err = NewFromConfigBytes(invalidConf1)
 	assert.Error(t, err)
 }
 
@@ -342,11 +342,11 @@ routes:
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `
       series: "whatever"`))
-	_, err := newFromConfigBytes(validConf)
+	_, err := NewFromConfigBytes(validConf)
 	assert.Nil(t, err)
 
 	invalidConf := []byte(fmt.Sprintf(confTmpl, ``))
-	_, err = newFromConfigBytes(invalidConf)
+	_, err = NewFromConfigBytes(invalidConf)
 	assert.Error(t, err)
 }
 
@@ -364,12 +364,12 @@ routes:
 
 	validConf := []byte(fmt.Sprintf(confTmpl, `
       series: "whatever"`))
-	_, err := newFromConfigBytes(validConf)
+	_, err := NewFromConfigBytes(validConf)
 	assert.Nil(t, err)
 
 	invalidConf := []byte(fmt.Sprintf(confTmpl, `
       series: "whatever"
       something-else: "hi there"`))
-	_, err = newFromConfigBytes(invalidConf)
+	_, err = NewFromConfigBytes(invalidConf)
 	assert.Error(t, err)
 }
