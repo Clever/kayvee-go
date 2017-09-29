@@ -93,6 +93,15 @@ func SetGlobalRouting(filename string) error {
 	return err
 }
 
+// SetGlobalRoutingFromBytes installs a new log router onto the KayveeLogger with the
+// configuration specified in . For convenience, the KayveeLogger is expected
+// to return itself as the first return value.
+func SetGlobalRoutingFromBytes(fileBytes []byte) error {
+	var err error
+	globalRouter, err = router.NewFromConfigBytes(fileBytes)
+	return err
+}
+
 // SetConfig implements the method for the KayveeLogger interface.
 func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer) {
 	if l.globals == nil {
