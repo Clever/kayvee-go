@@ -297,7 +297,7 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 		context["deploy_env"] = os.Getenv("_DEPLOY_ENV")
 	}
 	if os.Getenv("_EXECUTION_NAME") != "" {
-		context["workflow_id"] = os.Getenv("_EXECUTION_NAME")
+		context["wf_id"] = os.Getenv("_EXECUTION_NAME")
 	}
 	logObj := Logger{
 		globals: context,

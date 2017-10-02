@@ -44,7 +44,7 @@ func Format(data map[string]interface{}) string {
 		data["deploy_env"] = deployEnv
 	}
 	if workflowID != "" {
-		data["workflow_id"] = workflowID
+		data["wf_id"] = workflowID
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)
