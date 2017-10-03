@@ -7,10 +7,14 @@ import (
 )
 
 var deployEnv string
+var workflowID string
 
 func init() {
 	if os.Getenv("_DEPLOY_ENV") != "" {
 		deployEnv = os.Getenv("_DEPLOY_ENV")
+	}
+	if os.Getenv("_EXECUTION_NAME") != "" {
+		workflowID = os.Getenv("_EXECUTION_NAME")
 	}
 }
 
@@ -38,6 +42,9 @@ const (
 func Format(data map[string]interface{}) string {
 	if deployEnv != "" {
 		data["deploy_env"] = deployEnv
+	}
+	if workflowID != "" {
+		data["wf_id"] = workflowID
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)

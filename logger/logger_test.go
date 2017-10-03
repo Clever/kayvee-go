@@ -28,6 +28,7 @@ func compareJSONStrings(t *testing.T, expected string, actual string) {
 	}
 
 	expectedJSON["deploy_env"] = "testing"
+	expectedJSON["wf_id"] = "abc123"
 
 	assert.Equal(t, expectedJSON, actualJSON)
 }
@@ -263,7 +264,7 @@ func TestRouter(t *testing.T) {
 		"key2":    "val2",
 		"_kvmeta": M{"routekey": 42},
 	})
-	assertLogFormatAndCompareContent(t, expected, string(buf.Bytes()))
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), expected)
 }
 func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 	assert.False(m.t, m.called)
@@ -272,7 +273,7 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		"key1": "val1",
 		"key2": "val2",
 	})
-	assertLogFormatAndCompareContent(m.t, expected, kv.Format(msg))
+	assertLogFormatAndCompareContent(m.t, kv.Format(msg), expected)
 	return map[string]interface{}{"routekey": 42}
 }
 

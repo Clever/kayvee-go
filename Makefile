@@ -7,6 +7,7 @@ PKGS = $(shell go list ./...)
 $(eval $(call golang-version-check,1.8))
 
 export _DEPLOY_ENV=testing
+export _EXECUTION_NAME=abc123
 
 define set-version
 @echo $(VERS) > VERSION

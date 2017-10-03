@@ -108,6 +108,7 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["params"] = "key=val&key2=val2"
 		test.expectedLog["source"] = "my-source"
 		test.expectedLog["deploy_env"] = "testing"
+		test.expectedLog["wf_id"] = "abc123"
 		test.expectedLog["canary"] = false
 		assert.Equal(test.expectedLog, result)
 	}
