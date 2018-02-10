@@ -1,6 +1,6 @@
 # kayvee
 ```golang
-    import "gopkg.in/Clever/kayvee-go.v6"
+import "gopkg.in/Clever/kayvee-go.v6"
 ```
 
 Package kayvee provides methods to output human and machine parseable strings,
