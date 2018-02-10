@@ -1,6 +1,7 @@
 # kayvee
---
+```golang
     import "gopkg.in/Clever/kayvee-go.v6"
+```
 
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
@@ -18,6 +19,7 @@ package main
 
 import (
     l "log"
+    "os"
     "path"
     "time"
 
@@ -28,11 +30,11 @@ import (
 var log = logger.New("myApp")
 
 func init() {
-    // Use osext library to consistently find kvconfig.yml file
-    dir, err := osext.ExecutableFolder()
-    if err != nil {
-        l.Fatal(err)
-    }
+	exePath, err := os.Executable()
+	if err != nil {
+		l.Fatal(err)
+	}
+	dir := path.Dir(exePath)
     err = logger.SetGlobalRouting(path.Join(dir, "kvconfig.yml"))
     if err != nil {
         l.Fatal(err)
