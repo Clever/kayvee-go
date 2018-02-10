@@ -30,11 +30,11 @@ import (
 var log = logger.New("myApp")
 
 func init() {
-	exePath, err := os.Executable()
-	if err != nil {
-		l.Fatal(err)
-	}
-	dir := path.Dir(exePath)
+    exePath, err := os.Executable()
+    if err != nil {
+        l.Fatal(err)
+    }
+    dir := path.Dir(exePath)
     err = logger.SetGlobalRouting(path.Join(dir, "kvconfig.yml"))
     if err != nil {
         l.Fatal(err)
