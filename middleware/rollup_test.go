@@ -69,6 +69,7 @@ func TestProcess(t *testing.T) {
 			rr.Process(map[string]interface{}{
 				"status-code":   200,
 				"op":            "healthCheck",
+				"method":        "GET",
 				"canary":        false,
 				"response-time": 100 * time.Millisecond,
 			})
@@ -86,6 +87,7 @@ func TestProcess(t *testing.T) {
 				"canary":               false,
 				"count":                int64(100),
 				"op":                   "healthCheck",
+				"method":               "GET",
 				"response-time-ms":     int64(100),
 				"response-time-ms-sum": int64(100 * 100),
 				"status-code":          200,
@@ -106,18 +108,20 @@ func TestShouldRollup(t *testing.T) {
 		map[string]interface{}{
 			"status-code":   200,
 			"op":            "getApps",
+			"method":        "GET",
 			"canary":        true,
 			"response-time": 600 * time.Millisecond, // too slow
 		},
 		map[string]interface{}{
 			"status-code":   500, // not a 200
 			"op":            "getApps",
+			"method":        "GET",
 			"canary":        true,
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
 			"status-code": 200,
-			// no op field
+			// no "op" or "method" field
 			"canary":        true,
 			"response-time": 50 * time.Millisecond,
 		},
@@ -130,12 +134,14 @@ func TestShouldRollup(t *testing.T) {
 		map[string]interface{}{
 			"status-code":   200,
 			"op":            "getAppByID",
+			"method":        "GET",
 			"canary":        true,
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
 			"status-code":   200,
 			"op":            "getAdminByID",
+			"method":        "GET",
 			"canary":        true,
 			"response-time": 400 * time.Millisecond,
 		},

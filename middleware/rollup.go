@@ -59,8 +59,11 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 
 // ShouldRollup returns true when a log msg meets the criteria for rollup.
 func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
-	_, ok := logmsg["op"].(string)
-	if !ok {
+	if _, ok := logmsg["op"].(string); !ok {
+		return false
+	}
+
+	if _, ok := logmsg["method"].(string); !ok {
 		return false
 	}
 
@@ -96,17 +99,21 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if !ok {
 		return
 	}
+	httpMethod, ok := logmsg["method"].(string)
+	if !ok {
+		return
+	}
 	canary, ok := logmsg["canary"].(bool)
 	if !ok {
 		return
 	}
-	r.findOrCreate(statusCode, op, canary).add(logmsg)
+	r.findOrCreate(statusCode, op, httpMethod, canary).add(logmsg)
 }
 
-func (r *RollupRouter) findOrCreate(statusCode int, op string, canary bool) *logRollup {
+func (r *RollupRouter) findOrCreate(statusCode int, op, method string, canary bool) *logRollup {
 	r.rollupsMu.Lock()
 	defer r.rollupsMu.Unlock()
-	rollupKey := fmt.Sprintf("%d-%s", statusCode, op)
+	rollupKey := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
 	if canary {
 		rollupKey += "-canary"
 	}
@@ -118,6 +125,7 @@ func (r *RollupRouter) findOrCreate(statusCode int, op string, canary bool) *log
 		ReportingDelayNs: (r.reportingDelay).Nanoseconds(),
 		StatusCode:       statusCode,
 		Op:               op,
+		HTTPMethod:       method,
 		Canary:           canary,
 	}
 	r.rollups[rollupKey] = rollup
@@ -132,6 +140,7 @@ type logRollup struct {
 	StatusCode       int
 	Op               string
 	Canary           bool
+	HTTPMethod       string
 
 	rollupMu                sync.Mutex
 	rollupMsg               map[string]interface{}
@@ -187,6 +196,7 @@ func (r *logRollup) add(logmsg map[string]interface{}) {
 			"op":          r.Op,
 			"count":       int64(0),
 			"canary":      r.Canary,
+			"method":      r.HTTPMethod,
 			"via":         "kayvee-middleware",
 		}
 	}
