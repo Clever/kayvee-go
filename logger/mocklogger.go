@@ -136,6 +136,11 @@ func (ml *MockRouteCountLogger) SetRouter(router router.Router) {
 	ml.logger.SetRouter(router)
 }
 
+// Trace implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) Trace(title string) {
+	ml.logger.Trace(title)
+}
+
 // Debug implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) Debug(title string) {
 	ml.logger.Debug(title)
@@ -174,6 +179,11 @@ func (ml *MockRouteCountLogger) GaugeInt(title string, value int) {
 // GaugeFloat implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) GaugeFloat(title string, value float64) {
 	ml.logger.GaugeFloat(title, value)
+}
+
+// TraceD implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) TraceD(title string, data map[string]interface{}) {
+	ml.logger.TraceD(title, data)
 }
 
 // DebugD implements the method for the KayveeLogger interface.
