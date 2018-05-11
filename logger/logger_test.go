@@ -40,6 +40,19 @@ func assertLogFormatAndCompareContent(t *testing.T, logline, expected string) {
 	compareJSONStrings(t, expected, actual)
 }
 
+func TestLogTrace(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+	logger.Trace("testlogTrace")
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.Format(
+		map[string]interface{}{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace"}))
+	buf.Reset()
+	logger.TraceD("testlogTrace", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.Format(
+		map[string]interface{}{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace", "key1": "val1", "key2": "val2"}))
+}
+
 func TestLogDebug(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")

@@ -27,7 +27,8 @@ type LogLevel int
 
 // Constants used to define different LogLevels supported
 const (
-	Debug LogLevel = iota
+	Trace LogLevel = iota
+	Debug
 	Info
 	Warning
 	Error
@@ -35,6 +36,7 @@ const (
 )
 
 var logLevelNames = map[LogLevel]string{
+	Trace:    "trace",
 	Debug:    "debug",
 	Info:     "info",
 	Warning:  "warning",
@@ -44,6 +46,8 @@ var logLevelNames = map[LogLevel]string{
 
 func (l LogLevel) String() string {
 	switch l {
+	case Trace:
+		fallthrough
 	case Debug:
 		fallthrough
 	case Info:
@@ -148,6 +152,11 @@ func (l *Logger) setFormatLogger(fl formatLogger) {
 	l.fLogger = fl
 }
 
+// Trace implements the method for the KayveeLogger interface.
+func (l *Logger) Trace(title string) {
+	l.TraceD(title, M{})
+}
+
 // Debug implements the method for the KayveeLogger interface.
 func (l *Logger) Debug(title string) {
 	l.DebugD(title, M{})
@@ -189,6 +198,12 @@ func (l *Logger) GaugeInt(title string, value int) {
 // Logs with type = gauge, and value = value
 func (l *Logger) GaugeFloat(title string, value float64) {
 	l.GaugeFloatD(title, value, M{})
+}
+
+// TraceD implements the method for the KayveeLogger interface.
+func (l *Logger) TraceD(title string, data map[string]interface{}) {
+	data["title"] = title
+	l.logWithLevel(Trace, data)
 }
 
 // DebugD implements the method for the KayveeLogger interface.
@@ -309,7 +324,7 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 	var logLvl LogLevel
 	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
 	if strLogLvl == "" {
-		logLvl = Debug
+		logLvl = Trace
 	} else {
 		for key, val := range logLevelNames {
 			if strings.ToLower(strLogLvl) == val {

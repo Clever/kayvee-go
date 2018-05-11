@@ -60,6 +60,12 @@ type KayveeLogger interface {
 	// CriticalD takes a string and data map. It logs with LogLevel = Critical
 	CriticalD(title string, data map[string]interface{})
 
+	// Trace takes a string and logs with LogLevel = Trace
+	Trace(title string)
+
+	// TraceD takes a string and data map. It logs with LogLevel = Trace
+	TraceD(title string, data map[string]interface{})
+
 	// Debug takes a string and logs with LogLevel = Debug
 	Debug(title string)
 
