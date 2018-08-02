@@ -23,7 +23,6 @@ import (
     "path"
     "time"
 
-    "github.com/kardianos/osext"
     "gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
