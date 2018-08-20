@@ -13,7 +13,10 @@ var teamName string
 func init() {
 	teamName = os.Getenv("_TEAM_OWNER")
 	if teamName == "" {
-		teamName = "UNSET"
+		teamName = os.Getenv("TEAM_OWNER")
+		if teamName == "" {
+			teamName = "UNSET"
+		}
 	}
 }
 
