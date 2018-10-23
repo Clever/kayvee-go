@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	kv "gopkg.in/Clever/kayvee-go.v6"
 	"gopkg.in/Clever/kayvee-go.v6/router"
@@ -71,6 +72,7 @@ func (l LogLevel) String() string {
 // Logger is the default implementation of KayveeLogger.
 // It provides customization of globals, default log level, formatting, and output destination.
 type Logger struct {
+	globalsL  sync.RWMutex
 	globals   map[string]interface{}
 	logLvl    LogLevel
 	fLogger   formatLogger
@@ -108,6 +110,9 @@ func SetGlobalRoutingFromBytes(fileBytes []byte) error {
 
 // SetConfig implements the method for the KayveeLogger interface.
 func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer) {
+	l.globalsL.Lock()
+	defer l.globalsL.Unlock()
+
 	if l.globals == nil {
 		l.globals = make(map[string]interface{})
 	}
@@ -119,11 +124,15 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 
 // AddContext implements the method for the KayveeLogger interface.
 func (l *Logger) AddContext(key, val string) {
+	l.globalsL.Lock()
+	defer l.globalsL.Unlock()
 	updateContextMapIfNotReserved(l.globals, key, val)
 }
 
 // GetContext implements the method for the KayveeLogger interface.
 func (l *Logger) GetContext(key string) (interface{}, bool) {
+	l.globalsL.RLock()
+	defer l.globalsL.RUnlock()
 	val, ok := l.globals[key]
 	return val, ok
 }
@@ -272,6 +281,8 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		return
 	}
 	data["level"] = logLvl.String()
+	l.globalsL.RLock()
+	defer l.globalsL.RUnlock()
 	for key, value := range l.globals {
 		if _, ok := data[key]; ok {
 			// Values in the data map override the globals
