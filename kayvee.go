@@ -8,6 +8,9 @@ import (
 
 var deployEnv string
 var workflowID string
+var podID string
+var podRegion string
+var podAccount string
 
 func init() {
 	if os.Getenv("_DEPLOY_ENV") != "" {
@@ -15,6 +18,15 @@ func init() {
 	}
 	if os.Getenv("_EXECUTION_NAME") != "" {
 		workflowID = os.Getenv("_EXECUTION_NAME")
+	}
+	if os.Getenv("_POD_ID") != "" {
+		podID = os.Getenv("_POD_ID")
+	}
+	if os.Getenv("_POD_REGION") != "" {
+		podRegion = os.Getenv("_POD_REGION")
+	}
+	if os.Getenv("_POD_ACCOUNT") != "" {
+		podAccount = os.Getenv("_POD_ACCOUNT")
 	}
 }
 
@@ -45,6 +57,15 @@ func Format(data map[string]interface{}) string {
 	}
 	if workflowID != "" {
 		data["wf_id"] = workflowID
+	}
+	if podID != "" {
+		data["pod-id"] = podID
+	}
+	if podRegion != "" {
+		data["pod-region"] = podRegion
+	}
+	if podAccount != "" {
+		data["pod-account"] = podAccount
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)
