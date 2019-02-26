@@ -56,11 +56,13 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	duration := time.Since(start)
 
 	data := l.applyHandlers(req, map[string]interface{}{
-		"response-time": duration,
-		"response-size": lrw.length,
-		"status-code":   lrw.status,
-		"via":           "kayvee-middleware",
-		"canary":        l.isCanary,
+		"response-time":    duration,
+		"response-time-ms": duration.Nanoseconds() / int64(time.Millisecond),
+		"count":            1, // this makes aggregating single logs with rollup logs easier
+		"response-size":    lrw.length,
+		"status-code":      lrw.status,
+		"via":              "kayvee-middleware",
+		"canary":           l.isCanary,
 	})
 
 	// check if the user has opted in to rolling up middleware logs

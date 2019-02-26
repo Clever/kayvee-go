@@ -58,6 +58,7 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 }
 
 // ShouldRollup returns true when a log msg meets the criteria for rollup.
+// In the future allow more configurability, for now default to 200's and < 500ms.
 func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
 	if _, ok := logmsg["op"].(string); !ok {
 		return false
@@ -70,19 +71,18 @@ func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
 	statusCode, ok := logmsg["status-code"].(int)
 	if !ok {
 		return false
+	} else if statusCode != 200 {
+		return false
 	}
 
 	responseTime, ok := logmsg["response-time"].(time.Duration)
 	if !ok {
 		return false
+	} else if responseTime >= 500*time.Millisecond {
+		return false
 	}
 
-	// in the future allow more configurability, for now default to 200s and < 500ms
-	if statusCode == 200 && responseTime < 500*time.Millisecond {
-		return true
-	}
-
-	return false
+	return true
 }
 
 // Process rolls up a log message.
@@ -154,6 +154,7 @@ func (r *logRollup) report() {
 		sum := r.rollupResponseTimeNsSum / int64(time.Millisecond)
 		r.rollupMsg["response-time-ms-sum"] = sum
 		r.rollupMsg["response-time-ms"] = sum / r.rollupMsg["count"].(int64)
+
 		switch logLevelFromStatus(r.StatusCode) {
 		case logger.Error:
 			r.Logger.ErrorD("request-finished-rollup", r.rollupMsg)
