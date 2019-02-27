@@ -6,11 +6,13 @@ import (
 	"os"
 )
 
-var deployEnv string
-var workflowID string
-var podID string
-var podRegion string
-var podAccount string
+var (
+	deployEnv  string
+	workflowID string
+	podID      string
+	podRegion  string
+	podAccount string
+)
 
 func init() {
 	if os.Getenv("_DEPLOY_ENV") != "" {

@@ -98,7 +98,12 @@ func TestMiddleware(t *testing.T) {
 		if result["response-time"].(float64) < 1 {
 			t.Fatalf("invalid response-time %d", result["response-time"])
 		}
+		// check that response-time-ms exists, it's usually 0 in these tests
+		_, ok := result["response-time-ms"].(float64)
+		assert.True(ok, "response-time-ms in log")
+
 		delete(result, "response-time")
+		delete(result, "response-time-ms")
 
 		test.expectedLog["ip"] = "192.168.0.1"
 		test.expectedLog["path"] = "path"
@@ -107,6 +112,7 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["via"] = "kayvee-middleware"
 		test.expectedLog["params"] = "key=val&key2=val2"
 		test.expectedLog["source"] = "my-source"
+		test.expectedLog["count"] = float64(1)
 		test.expectedLog["deploy_env"] = "testing"
 		test.expectedLog["wf_id"] = "abc123"
 		test.expectedLog["canary"] = false
