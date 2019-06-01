@@ -4,7 +4,7 @@ include golang.mk
 .PHONY: test benchmark-data clean bump-major bump-minor bump-patch tag-version $(PKGS)
 SHELL := /bin/bash
 PKGS = $(shell go list ./...)
-$(eval $(call golang-version-check,1.10))
+$(eval $(call golang-version-check,1.12))
 
 export _DEPLOY_ENV=testing
 export _EXECUTION_NAME=abc123
