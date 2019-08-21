@@ -15,8 +15,10 @@ var (
 )
 
 func init() {
-	if os.Getenv("_DEPLOY_ENV") != "" {
-		deployEnv = os.Getenv("_DEPLOY_ENV")
+	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
+		deployEnv = v
+	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
+		deployEnv = v
 	}
 	if os.Getenv("_EXECUTION_NAME") != "" {
 		workflowID = os.Getenv("_EXECUTION_NAME")
