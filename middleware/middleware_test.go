@@ -120,6 +120,35 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
+func TestMiddlewareCanaryFromShortname(t *testing.T) {
+	os.Setenv("_POD_SHORTNAME", "us-west-1-dev-canary-xxxxxxxx")
+	defer os.Unsetenv("_POD_SHORTNAME")
+
+	assert := assert.New(t)
+
+	out := &bytes.Buffer{}
+
+	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.FromContext(r.Context()).SetConfig("my-source", logger.Info, kv.Format, out)
+	}), "my-source")
+
+	rw := &bufferWriter{}
+	handler.ServeHTTP(rw, &http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Host: "trollhost.com",
+			Path: "path",
+		},
+	})
+
+	var result map[string]interface{}
+	assert.Nil(json.NewDecoder(out).Decode(&result))
+
+	log.Printf("%#v", result)
+
+	assert.Equal(true, result["canary"])
+}
+
 func TestMiddlewareCanaryFlag(t *testing.T) {
 	os.Setenv("_CANARY", "1")
 	defer os.Unsetenv("_CANARY")

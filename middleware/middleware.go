@@ -12,6 +12,7 @@ package middleware
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/Clever/kayvee-go.v6/logger"
@@ -107,6 +108,14 @@ func New(h http.Handler, source string, handlers ...func(*http.Request) map[stri
 	if canaryFlag == "1" {
 		isCanary = true
 	}
+
+	// During the transition to pods, let's keep the canary field accurate
+	// whether it's in the canary pod or a canary container in homepod
+	podShortname := os.Getenv("_POD_SHORTNAME")
+	if strings.Contains(podShortname, "-canary") {
+		isCanary = true
+	}
+
 	return &logHandler{
 		handlers: handlers,
 		h:        h,

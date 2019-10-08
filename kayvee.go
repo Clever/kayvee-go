@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	deployEnv  string
-	workflowID string
-	podID      string
-	podRegion  string
-	podAccount string
+	deployEnv    string
+	workflowID   string
+	podID        string
+	podRegion    string
+	podAccount   string
+	podShortname string
 )
 
 func init() {
@@ -31,6 +32,9 @@ func init() {
 	}
 	if os.Getenv("_POD_ACCOUNT") != "" {
 		podAccount = os.Getenv("_POD_ACCOUNT")
+	}
+	if os.Getenv("_POD_SHORTNAME") != "" {
+		podShortname = os.Getenv("_POD_SHORTNAME")
 	}
 }
 
@@ -70,6 +74,9 @@ func Format(data map[string]interface{}) string {
 	}
 	if podAccount != "" {
 		data["pod-account"] = podAccount
+	}
+	if podShortname != "" {
+		data["pod-shortname"] = podShortname
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)
