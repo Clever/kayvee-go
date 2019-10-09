@@ -10,9 +10,9 @@ var (
 	deployEnv    string
 	workflowID   string
 	podID        string
+	podShortname string
 	podRegion    string
 	podAccount   string
-	podShortname string
 )
 
 func init() {
@@ -27,14 +27,14 @@ func init() {
 	if os.Getenv("_POD_ID") != "" {
 		podID = os.Getenv("_POD_ID")
 	}
+	if os.Getenv("_POD_SHORTNAME") != "" {
+		podShortname = os.Getenv("_POD_SHORTNAME")
+	}
 	if os.Getenv("_POD_REGION") != "" {
 		podRegion = os.Getenv("_POD_REGION")
 	}
 	if os.Getenv("_POD_ACCOUNT") != "" {
 		podAccount = os.Getenv("_POD_ACCOUNT")
-	}
-	if os.Getenv("_POD_SHORTNAME") != "" {
-		podShortname = os.Getenv("_POD_SHORTNAME")
 	}
 }
 
@@ -69,14 +69,14 @@ func Format(data map[string]interface{}) string {
 	if podID != "" {
 		data["pod-id"] = podID
 	}
+	if podShortname != "" {
+		data["pod-shortname"] = podShortname
+	}
 	if podRegion != "" {
 		data["pod-region"] = podRegion
 	}
 	if podAccount != "" {
 		data["pod-account"] = podAccount
-	}
-	if podShortname != "" {
-		data["pod-shortname"] = podShortname
 	}
 	formattedString, _ := json.Marshal(data)
 	return string(formattedString)

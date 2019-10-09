@@ -330,14 +330,14 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 	if os.Getenv("_POD_ID") != "" {
 		context["pod-id"] = os.Getenv("_POD_ID")
 	}
+	if os.Getenv("_POD_SHORTNAME") != "" {
+		context["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
+	}
 	if os.Getenv("_POD_REGION") != "" {
 		context["pod-region"] = os.Getenv("_POD_REGION")
 	}
 	if os.Getenv("_POD_ACCOUNT") != "" {
 		context["pod-account"] = os.Getenv("_POD_ACCOUNT")
-	}
-	if os.Getenv("_POD_SHORTNAME") != "" {
-		context["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
 	}
 	logObj := Logger{
 		globals: context,
