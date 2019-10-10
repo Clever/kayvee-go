@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -92,8 +91,6 @@ func TestMiddleware(t *testing.T) {
 		var result map[string]interface{}
 		assert.Nil(json.NewDecoder(out).Decode(&result))
 
-		log.Printf("%#v", result)
-
 		// response-time changes each run, so just check that it's more than zero
 		if result["response-time"].(float64) < 1 {
 			t.Fatalf("invalid response-time %d", result["response-time"])
@@ -120,6 +117,33 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
+func TestMiddlewareCanaryFromShortname(t *testing.T) {
+	os.Setenv("_POD_SHORTNAME", "us-west-1-dev-canary-xxxxxxxx")
+	defer os.Unsetenv("_POD_SHORTNAME")
+
+	assert := assert.New(t)
+
+	out := &bytes.Buffer{}
+
+	handler := New(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.FromContext(r.Context()).SetConfig("my-source", logger.Info, kv.Format, out)
+	}), "my-source")
+
+	rw := &bufferWriter{}
+	handler.ServeHTTP(rw, &http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Host: "trollhost.com",
+			Path: "path",
+		},
+	})
+
+	var result map[string]interface{}
+	assert.Nil(json.NewDecoder(out).Decode(&result))
+
+	assert.Equal(true, result["canary"])
+}
+
 func TestMiddlewareCanaryFlag(t *testing.T) {
 	os.Setenv("_CANARY", "1")
 	defer os.Unsetenv("_CANARY")
@@ -143,8 +167,6 @@ func TestMiddlewareCanaryFlag(t *testing.T) {
 
 	var result map[string]interface{}
 	assert.Nil(json.NewDecoder(out).Decode(&result))
-
-	log.Printf("%#v", result)
 
 	assert.Equal(true, result["canary"])
 
