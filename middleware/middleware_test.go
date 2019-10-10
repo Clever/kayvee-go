@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -92,8 +91,6 @@ func TestMiddleware(t *testing.T) {
 		var result map[string]interface{}
 		assert.Nil(json.NewDecoder(out).Decode(&result))
 
-		log.Printf("%#v", result)
-
 		// response-time changes each run, so just check that it's more than zero
 		if result["response-time"].(float64) < 1 {
 			t.Fatalf("invalid response-time %d", result["response-time"])
@@ -144,8 +141,6 @@ func TestMiddlewareCanaryFromShortname(t *testing.T) {
 	var result map[string]interface{}
 	assert.Nil(json.NewDecoder(out).Decode(&result))
 
-	log.Printf("%#v", result)
-
 	assert.Equal(true, result["canary"])
 }
 
@@ -172,8 +167,6 @@ func TestMiddlewareCanaryFlag(t *testing.T) {
 
 	var result map[string]interface{}
 	assert.Nil(json.NewDecoder(out).Decode(&result))
-
-	log.Printf("%#v", result)
 
 	assert.Equal(true, result["canary"])
 
