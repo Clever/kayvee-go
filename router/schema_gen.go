@@ -3,7 +3,7 @@
 package router
 
 var routerSchema = `{
-  "description": "Last modified: 02/08/2017",
+  "description": "Last modified: 11/05/2019",
   "required": ["routes"],
   "properties": {
     "routes": { "$ref": "#/definitions/routes" }
@@ -124,7 +124,7 @@ var routerSchema = `{
           "pattern": "^notifications$"
         },
         "channel": { "$ref": "#/definitions/kvSubstValue" },
-        "icon": { "$ref": "#/definitions/envVarSubstValue" },
+        "icon": { "$ref": "#/definitions/kvSubstValue" },
         "message": { "$ref": "#/definitions/kvSubstValue" },
         "user": { "$ref": "#/definitions/envVarSubstValue" }
       }
