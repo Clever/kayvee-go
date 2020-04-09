@@ -27,3 +27,6 @@ benchmarks/data/*.json
 benchmarks/data/*.yml
 bin/
 vendor/
+
+# mocks
+**/mock*.go

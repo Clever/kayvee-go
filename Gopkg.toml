@@ -20,6 +20,7 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+required = ["github.com/golang/mock/mockgen"]
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -36,3 +37,7 @@
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
+
+  [[constraint]]
+  name = "github.com/eapache/go-resiliency"
+  version = "1.2.0"

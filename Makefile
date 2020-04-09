@@ -39,7 +39,10 @@ tag-version:
 	$(eval VERS := $(shell cat VERSION))
 	@git tag v$(VERS)
 
-test: tests.json benchmark-data $(PKGS)
+generate:
+	go generate ./...
+
+test: generate tests.json benchmark-data $(PKGS)
 
 clean:
 	rm ./benchmarks/data/*.json ./benchmarks/data/*.yml
@@ -68,3 +71,5 @@ tests.json:
 
 install_deps: golang-dep-vendor-deps
 	$(call golang-dep-vendor)
+	go build -o bin/mockgen ./vendor/github.com/golang/mock/mockgen
+	cp bin/mockgen $(GOPATH)/bin/mockgen
