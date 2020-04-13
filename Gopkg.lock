@@ -2,10 +2,76 @@
 
 
 [[projects]]
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
+    "aws/credentials/stscreds",
+    "aws/csm",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/context",
+    "internal/ini",
+    "internal/sdkio",
+    "internal/sdkmath",
+    "internal/sdkrand",
+    "internal/sdkuri",
+    "internal/shareddefaults",
+    "internal/strings",
+    "internal/sync/singleflight",
+    "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/xml/xmlutil",
+    "service/firehose",
+    "service/firehose/firehoseiface",
+    "service/sts",
+    "service/sts/stsiface"
+  ]
+  revision = "d91e4e60303a834dc80a4494771d97a2021444fd"
+  version = "v1.30.6"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/eapache/go-resiliency"
+  packages = ["retrier"]
+  revision = "5efd2ed019fd331ec2defc6f3bd98882f1e3e636"
+  version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/golang/mock"
+  packages = [
+    "gomock",
+    "mockgen",
+    "mockgen/model"
+  ]
+  revision = "3a35fb6e3e18b9dbfee291262260dee7372d2a92"
+  version = "v1.4.3"
+
+[[projects]]
+  name = "github.com/jmespath/go-jmespath"
+  packages = ["."]
+  revision = "c2b33e84"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -15,7 +81,10 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","require"]
+  packages = [
+    "assert",
+    "require"
+  ]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
@@ -38,8 +107,37 @@
   revision = "212d8a0df7acfab8bdd190a7a69f0ab7376edcc8"
 
 [[projects]]
+  branch = "master"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/typeutil",
+    "internal/gocommand",
+    "internal/packagesinternal",
+    "internal/telemetry/event"
+  ]
+  revision = "9ee5ef7a2c0d9779e4e0ffb6ea39fd154af06adc"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal"
+  ]
+  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
+
+[[projects]]
   name = "gopkg.in/Clever/kayvee-go.v6"
-  packages = [".","logger","router"]
+  packages = [
+    ".",
+    "logger",
+    "router"
+  ]
   revision = "e1e6fd8184162847c1123645e7058347a2fd3959"
   version = "v6.10.0"
 
@@ -52,6 +150,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6139193b5ac5a8e9a6ea07a5f73c7cad9dbaedf3e57bb83cfec8356f55e6e784"
+  inputs-digest = "effc096622d963cfab1ef63bc375a63e282db439a1cb3135d86b41aa2712479a"
   solver-name = "gps-cdcl"
   solver-version = 1
