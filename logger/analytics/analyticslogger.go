@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,14 +23,27 @@ import (
 // Logger writes to Firehose instead of the logging pipeline
 type Logger struct {
 	logger.KayveeLogger
-	fhStream string
-	fhAPI    firehoseiface.FirehoseAPI
+	fhStream        string
+	fhAPI           firehoseiface.FirehoseAPI
+	batch           []*firehose.Record
+	batchBytes      int
+	maxBatchRecords int
+	maxBatchBytes   int
+	mu              sync.Mutex
 }
 
 var _ logger.KayveeLogger = &Logger{}
-var _ io.Writer = &Logger{}
+var _ io.WriteCloser = &Logger{}
 
 var ignoredFields = []string{"level", "source", "title", "deploy_env", "wf_id"}
+
+// firehosePutRecordBatchMaxRecords is an AWS limit.
+// https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html
+const firehosePutRecordBatchMaxRecords = 500
+
+// firehosePutRecordBatchMaxBytes is an AWS limit on total bytes in a PutRecordBatch request.
+// https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html
+const firehosePutRecordBatchMaxBytes = 4000000
 
 // Config configures things related to collecting analytics.
 type Config struct {
@@ -38,7 +52,11 @@ type Config struct {
 	// Environment is the name of the environment to point to. Default is _DEPLOY_ENV.
 	Environment string
 	// Region is the region where this is running. Defaults to _POD_REGION.
-	Region *string
+	Region string
+	// FirehosePutRecordBatchMaxRecords overrides the default value (500) for the maximum number of records to send in a firehose batch.
+	FirehosePutRecordBatchMaxRecords int
+	// FirehosePutRecordBatchMaxBytes overrides the default value (4000000) for the maximum number of bytes to send in a firehose batch.
+	FirehosePutRecordBatchMaxBytes int
 	// FirehoseAPI defaults to an API object configured with Region, but can be overriden here.
 	FirehoseAPI firehoseiface.FirehoseAPI
 }
@@ -51,23 +69,29 @@ func New(c Config) (*Logger, error) {
 	l.SetOutput(al)
 	env, dbname := c.Environment, c.DBName
 	if env == "" {
-		env = os.Getenv("_DEPLOY_ENV")
-		if env == "" {
+		if env = os.Getenv("_DEPLOY_ENV"); env == "" {
 			return nil, errors.New("env could not be set (either pass in explicit env, or set _DEPLOY_ENV)")
 		}
 	}
 	al.fhStream = fmt.Sprintf("%s--%s", env, dbname)
 
+	if v := c.FirehosePutRecordBatchMaxRecords; v != 0 {
+		al.maxBatchRecords = min(v, firehosePutRecordBatchMaxRecords)
+	} else {
+		al.maxBatchRecords = firehosePutRecordBatchMaxRecords
+	}
+	if v := c.FirehosePutRecordBatchMaxBytes; v != 0 {
+		al.maxBatchBytes = min(v, firehosePutRecordBatchMaxBytes)
+	} else {
+		al.maxBatchBytes = firehosePutRecordBatchMaxBytes
+	}
+
 	if c.FirehoseAPI != nil {
 		al.fhAPI = c.FirehoseAPI
-	} else if c.Region != nil {
-		sess, err := session.NewSession(&aws.Config{
-			Region: c.Region,
-		})
-		if err != nil {
-			return nil, errors.New("unable to create AWS session")
-		}
-		al.fhAPI = firehose.New(sess)
+	} else if c.Region != "" {
+		al.fhAPI = firehose.New(session.New(&aws.Config{
+			Region: aws.String(c.Region),
+		}))
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
@@ -76,6 +100,8 @@ func New(c Config) (*Logger, error) {
 
 // Write a log.
 func (al *Logger) Write(bs []byte) (int, error) {
+	al.mu.Lock()
+	defer al.mu.Unlock()
 	var m map[string]interface{}
 	if err := json.Unmarshal(bs, &m); err != nil {
 		return 0, err
@@ -89,20 +115,64 @@ func (al *Logger) Write(bs []byte) (int, error) {
 		return 0, err
 	}
 	bs = append(bs, '\n')
-	r := retrier.New(retrier.ExponentialBackoff(5, 100*time.Millisecond), RequestErrorClassifier{})
-	if err := r.Run(func() error {
-		_, err := al.fhAPI.PutRecord(&firehose.PutRecordInput{
-			DeliveryStreamName: aws.String(al.fhStream),
-			Record:             &firehose.Record{Data: bs},
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return 0, fmt.Errorf("PutRecords: %v", err)
+	al.batchBytes += len(bs)
+	al.batch = append(al.batch, &firehose.Record{Data: bs})
+	if len(al.batch) == al.maxBatchRecords || al.batchBytes > int(0.9*float64(al.maxBatchBytes)) {
+		return len(bs), al.sendBatch()
 	}
 	return len(bs), nil
+}
+
+// Close flushes all logs to Firehose.
+func (al *Logger) Close() error {
+	al.mu.Lock()
+	defer al.mu.Unlock()
+	if len(al.batch) > 0 {
+		return al.sendBatch()
+	}
+	return nil
+}
+
+func (al *Logger) sendBatch() error {
+	defer func() {
+		// reset the batch state no matter what, since
+		// errors will only get worse if we keep adding to
+		// the batch (i.e. we'll exceed record or byte limits)
+		al.batch = []*firehose.Record{}
+		al.batchBytes = 0
+	}()
+
+	// call PutRecordBatch until all records in the batch have been sent successfully
+	for batch := al.batch; ; {
+		var result *firehose.PutRecordBatchOutput
+		r := retrier.New(retrier.ExponentialBackoff(5, 100*time.Millisecond), RequestErrorClassifier{})
+		if err := r.Run(func() error {
+			out, err := al.fhAPI.PutRecordBatch(&firehose.PutRecordBatchInput{
+				DeliveryStreamName: aws.String(al.fhStream),
+				Records:            batch,
+			})
+			if err != nil {
+				return err
+			}
+			result = out
+			return nil
+		}); err != nil {
+			return fmt.Errorf("PutRecords: %v", err)
+		}
+		if aws.Int64Value(result.FailedPutCount) == 0 {
+			break
+		}
+		// formulate a new batch consisting of the unprocessed items
+		newbatch := []*firehose.Record{}
+		for i, res := range result.RequestResponses {
+			if aws.StringValue(res.ErrorCode) == "" {
+				continue
+			}
+			newbatch = append(newbatch, batch[i])
+		}
+		batch = newbatch
+	}
+	return nil
 }
 
 func min(a, b int) int {

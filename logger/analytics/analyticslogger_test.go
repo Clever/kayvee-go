@@ -23,11 +23,13 @@ func TestLogger(t *testing.T) {
 				DBName:      "testdb",
 			},
 			mockExpectations: func(mf *MockFirehoseAPI) {
-				mf.EXPECT().PutRecord(&firehose.PutRecordInput{
+				mf.EXPECT().PutRecordBatch(&firehose.PutRecordBatchInput{
 					DeliveryStreamName: aws.String("testenv--testdb"),
-					Record: &firehose.Record{Data: []byte(`{"foo":"bar"}
+					Records: []*firehose.Record{
+						&firehose.Record{Data: []byte(`{"foo":"bar"}
 `)},
-				})
+					},
+				}).Return(&firehose.PutRecordBatchOutput{FailedPutCount: aws.Int64(0)}, nil)
 			},
 			ops: func(l logger.KayveeLogger) {
 				l.InfoD("test-title", logger.M{"foo": "bar"})
@@ -48,6 +50,7 @@ func TestLogger(t *testing.T) {
 				t.Fatal(err)
 			}
 			tt.ops(al)
+			al.Close()
 		})
 	}
 }
