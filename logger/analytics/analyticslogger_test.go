@@ -1,4 +1,4 @@
-package logger
+package analytics
 
 import (
 	"testing"
@@ -6,18 +6,19 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/firehose"
 	gomock "github.com/golang/mock/gomock"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
-func TestAnalyticsLogger(t *testing.T) {
+func TestLogger(t *testing.T) {
 	tests := []struct {
 		name             string
-		alc              AnalyticsLoggerConfig
+		alc              Config
 		mockExpectations func(mf *MockFirehoseAPI)
-		ops              func(l KayveeLogger)
+		ops              func(l logger.KayveeLogger)
 	}{
 		{
 			name: "sends one log",
-			alc: AnalyticsLoggerConfig{
+			alc: Config{
 				Environment: "testenv",
 				DBName:      "testdb",
 			},
@@ -28,8 +29,8 @@ func TestAnalyticsLogger(t *testing.T) {
 `)},
 				})
 			},
-			ops: func(l KayveeLogger) {
-				l.InfoD("test-title", M{"foo": "bar"})
+			ops: func(l logger.KayveeLogger) {
+				l.InfoD("test-title", logger.M{"foo": "bar"})
 			},
 		},
 	}
@@ -42,7 +43,7 @@ func TestAnalyticsLogger(t *testing.T) {
 				tt.mockExpectations(mf)
 			}
 			tt.alc.FirehoseAPI = mf
-			al, err := NewAnalyticsLogger(tt.alc)
+			al, err := New(tt.alc)
 			if err != nil {
 				t.Fatal(err)
 			}

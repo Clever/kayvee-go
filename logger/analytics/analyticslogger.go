@@ -1,4 +1,4 @@
-package logger
+package analytics
 
 import (
 	"encoding/json"
@@ -14,24 +14,25 @@ import (
 	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/aws/aws-sdk-go/service/firehose/firehoseiface"
 	"github.com/eapache/go-resiliency/retrier"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
-//go:generate mockgen -package logger -destination mock_firehose.go github.com/aws/aws-sdk-go/service/firehose/firehoseiface FirehoseAPI
+//go:generate mockgen -package $GOPACKAGE -destination mock_firehose.go github.com/aws/aws-sdk-go/service/firehose/firehoseiface FirehoseAPI
 
-// AnalyticsLogger writes to Firehose instead of the logging pipeline
-type AnalyticsLogger struct {
-	KayveeLogger
+// Logger writes to Firehose instead of the logging pipeline
+type Logger struct {
+	logger.KayveeLogger
 	fhStream string
 	fhAPI    firehoseiface.FirehoseAPI
 }
 
-var _ KayveeLogger = &AnalyticsLogger{}
-var _ io.Writer = &AnalyticsLogger{}
+var _ logger.KayveeLogger = &Logger{}
+var _ io.Writer = &Logger{}
 
 var ignoredFields = []string{"level", "source", "title", "deploy_env", "wf_id"}
 
-// AnalyticsLoggerConfig configures things related to collecting analytics.
-type AnalyticsLoggerConfig struct {
+// Config configures things related to collecting analytics.
+type Config struct {
 	// DBName is the name of the ark db.
 	DBName string
 	// Environment is the name of the environment to point to. Default is _DEPLOY_ENV.
@@ -42,13 +43,13 @@ type AnalyticsLoggerConfig struct {
 	FirehoseAPI firehoseiface.FirehoseAPI
 }
 
-// NewAnalyticsLogger returns a logger that writes to an analytics ark db.
+// New returns a logger that writes to an analytics ark db.
 // It takes as input the db name and the ark db config file.
-func NewAnalyticsLogger(alc AnalyticsLoggerConfig) (*AnalyticsLogger, error) {
-	l := New(alc.DBName)
-	al := &AnalyticsLogger{KayveeLogger: l}
+func New(c Config) (*Logger, error) {
+	l := logger.New(c.DBName)
+	al := &Logger{KayveeLogger: l}
 	l.SetOutput(al)
-	env, dbname := alc.Environment, alc.DBName
+	env, dbname := c.Environment, c.DBName
 	if env == "" {
 		env = os.Getenv("_DEPLOY_ENV")
 		if env == "" {
@@ -57,11 +58,11 @@ func NewAnalyticsLogger(alc AnalyticsLoggerConfig) (*AnalyticsLogger, error) {
 	}
 	al.fhStream = fmt.Sprintf("%s--%s", env, dbname)
 
-	if alc.FirehoseAPI != nil {
-		al.fhAPI = alc.FirehoseAPI
-	} else if alc.Region != nil {
+	if c.FirehoseAPI != nil {
+		al.fhAPI = c.FirehoseAPI
+	} else if c.Region != nil {
 		sess, err := session.NewSession(&aws.Config{
-			Region: alc.Region,
+			Region: c.Region,
 		})
 		if err != nil {
 			return nil, errors.New("unable to create AWS session")
@@ -74,7 +75,7 @@ func NewAnalyticsLogger(alc AnalyticsLoggerConfig) (*AnalyticsLogger, error) {
 }
 
 // Write a log.
-func (al *AnalyticsLogger) Write(bs []byte) (int, error) {
+func (al *Logger) Write(bs []byte) (int, error) {
 	var m map[string]interface{}
 	if err := json.Unmarshal(bs, &m); err != nil {
 		return 0, err
