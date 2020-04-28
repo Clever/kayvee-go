@@ -37,6 +37,8 @@ var _ io.WriteCloser = &Logger{}
 
 var ignoredFields = []string{"level", "source", "title", "deploy_env", "wf_id"}
 
+const timeoutForSendingBatches = time.Minute
+
 // firehosePutRecordBatchMaxRecords is an AWS limit.
 // https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html
 const firehosePutRecordBatchMaxRecords = 500
@@ -47,10 +49,12 @@ const firehosePutRecordBatchMaxBytes = 4000000
 
 // Config configures things related to collecting analytics.
 type Config struct {
-	// DBName is the name of the ark db.
+	// DBName is the name of the ark db. Either specify this or StreamName.
 	DBName string
 	// Environment is the name of the environment to point to. Default is _DEPLOY_ENV.
 	Environment string
+	// StreamName is the name of the Firehose to send to. Either specify this or DBName.
+	StreamName string
 	// Region is the region where this is running. Defaults to _POD_REGION.
 	Region string
 	// FirehosePutRecordBatchMaxRecords overrides the default value (500) for the maximum number of records to send in a firehose batch.
@@ -67,13 +71,23 @@ func New(c Config) (*Logger, error) {
 	l := logger.New(c.DBName)
 	al := &Logger{KayveeLogger: l}
 	l.SetOutput(al)
-	env, dbname := c.Environment, c.DBName
+	env, dbname, streamName := c.Environment, c.DBName, c.StreamName
+	if dbname != "" && streamName != "" {
+		return nil, errors.New("cannot specify both DBName and StreamName in logger config")
+	}
+	if dbname == "" && streamName == "" {
+		return nil, errors.New("must specify either DBName or StreamName in logger config")
+	}
 	if env == "" {
 		if env = os.Getenv("_DEPLOY_ENV"); env == "" {
 			return nil, errors.New("env could not be set (either pass in explicit env, or set _DEPLOY_ENV)")
 		}
 	}
-	al.fhStream = fmt.Sprintf("%s--%s", env, dbname)
+	if dbname != "" {
+		al.fhStream = fmt.Sprintf("%s--%s", env, dbname)
+	} else {
+		al.fhStream = streamName
+	}
 
 	if v := c.FirehosePutRecordBatchMaxRecords; v != 0 {
 		al.maxBatchRecords = min(v, firehosePutRecordBatchMaxRecords)
@@ -100,8 +114,6 @@ func New(c Config) (*Logger, error) {
 
 // Write a log.
 func (al *Logger) Write(bs []byte) (int, error) {
-	al.mu.Lock()
-	defer al.mu.Unlock()
 	var m map[string]interface{}
 	if err := json.Unmarshal(bs, &m); err != nil {
 		return 0, err
@@ -115,40 +127,43 @@ func (al *Logger) Write(bs []byte) (int, error) {
 		return 0, err
 	}
 	bs = append(bs, '\n')
+	al.mu.Lock()
 	al.batchBytes += len(bs)
 	al.batch = append(al.batch, &firehose.Record{Data: bs})
-	if len(al.batch) == al.maxBatchRecords || al.batchBytes > int(0.9*float64(al.maxBatchBytes)) {
-		return len(bs), al.sendBatch()
+	shouldSendBatch := len(al.batch) == al.maxBatchRecords || al.batchBytes > int(0.9*float64(al.maxBatchBytes))
+	if shouldSendBatch {
+		batch := al.batch
+		al.batch = []*firehose.Record{}
+		al.batchBytes = 0
+		// be careful not to send al.batch, since we will unlock before we finish sending the batch
+		go sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
 	}
+	al.mu.Unlock()
 	return len(bs), nil
 }
 
 // Close flushes all logs to Firehose.
 func (al *Logger) Close() error {
 	al.mu.Lock()
-	defer al.mu.Unlock()
 	if len(al.batch) > 0 {
-		return al.sendBatch()
+		batch := al.batch
+		al.batch = []*firehose.Record{}
+		al.batchBytes = 0
+		// be careful not to send al.batch, since we will unlock before we finish sending the batch
+		go sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
 	}
+	al.mu.Unlock()
 	return nil
 }
 
-func (al *Logger) sendBatch() error {
-	defer func() {
-		// reset the batch state no matter what, since
-		// errors will only get worse if we keep adding to
-		// the batch (i.e. we'll exceed record or byte limits)
-		al.batch = []*firehose.Record{}
-		al.batchBytes = 0
-	}()
-
+func sendBatch(batch []*firehose.Record, fhAPI firehoseiface.FirehoseAPI, fhStream string, timeout time.Time) error {
 	// call PutRecordBatch until all records in the batch have been sent successfully
-	for batch := al.batch; ; {
+	for time.Now().Before(timeout) {
 		var result *firehose.PutRecordBatchOutput
 		r := retrier.New(retrier.ExponentialBackoff(5, 100*time.Millisecond), RequestErrorClassifier{})
 		if err := r.Run(func() error {
-			out, err := al.fhAPI.PutRecordBatch(&firehose.PutRecordBatchInput{
-				DeliveryStreamName: aws.String(al.fhStream),
+			out, err := fhAPI.PutRecordBatch(&firehose.PutRecordBatchInput{
+				DeliveryStreamName: aws.String(fhStream),
 				Records:            batch,
 			})
 			if err != nil {

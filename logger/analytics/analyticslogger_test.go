@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/firehose"
@@ -51,6 +52,8 @@ func TestLogger(t *testing.T) {
 			}
 			tt.ops(al)
 			al.Close()
+			// sleep to make sure goroutines have time to complete
+			time.Sleep(time.Millisecond)
 		})
 	}
 }
