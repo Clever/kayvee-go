@@ -1,4 +1,4 @@
-package logger
+package analytics
 
 import (
 	"testing"
@@ -6,30 +6,33 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/firehose"
 	gomock "github.com/golang/mock/gomock"
+	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
-func TestAnalyticsLogger(t *testing.T) {
+func TestLogger(t *testing.T) {
 	tests := []struct {
 		name             string
-		alc              AnalyticsLoggerConfig
+		alc              Config
 		mockExpectations func(mf *MockFirehoseAPI)
-		ops              func(l KayveeLogger)
+		ops              func(l logger.KayveeLogger)
 	}{
 		{
 			name: "sends one log",
-			alc: AnalyticsLoggerConfig{
+			alc: Config{
 				Environment: "testenv",
 				DBName:      "testdb",
 			},
 			mockExpectations: func(mf *MockFirehoseAPI) {
-				mf.EXPECT().PutRecord(&firehose.PutRecordInput{
+				mf.EXPECT().PutRecordBatch(&firehose.PutRecordBatchInput{
 					DeliveryStreamName: aws.String("testenv--testdb"),
-					Record: &firehose.Record{Data: []byte(`{"foo":"bar"}
+					Records: []*firehose.Record{
+						&firehose.Record{Data: []byte(`{"foo":"bar"}
 `)},
-				})
+					},
+				}).Return(&firehose.PutRecordBatchOutput{FailedPutCount: aws.Int64(0)}, nil)
 			},
-			ops: func(l KayveeLogger) {
-				l.InfoD("test-title", M{"foo": "bar"})
+			ops: func(l logger.KayveeLogger) {
+				l.InfoD("test-title", logger.M{"foo": "bar"})
 			},
 		},
 	}
@@ -42,11 +45,12 @@ func TestAnalyticsLogger(t *testing.T) {
 				tt.mockExpectations(mf)
 			}
 			tt.alc.FirehoseAPI = mf
-			al, err := NewAnalyticsLogger(tt.alc)
+			al, err := New(tt.alc)
 			if err != nil {
 				t.Fatal(err)
 			}
 			tt.ops(al)
+			al.Close()
 		})
 	}
 }
