@@ -23,6 +23,7 @@ import (
 // Logger writes to Firehose instead of the logging pipeline
 type Logger struct {
 	logger.KayveeLogger
+	errLogger       logger.KayveeLogger
 	fhStream        string
 	fhAPI           firehoseiface.FirehoseAPI
 	batch           []*firehose.Record
@@ -30,6 +31,7 @@ type Logger struct {
 	maxBatchRecords int
 	maxBatchBytes   int
 	mu              sync.Mutex
+	sendBatchWG     sync.WaitGroup
 }
 
 var _ logger.KayveeLogger = &Logger{}
@@ -63,6 +65,8 @@ type Config struct {
 	FirehosePutRecordBatchMaxBytes int
 	// FirehoseAPI defaults to an API object configured with Region, but can be overriden here.
 	FirehoseAPI firehoseiface.FirehoseAPI
+	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
+	ErrLogger logger.KayveeLogger
 }
 
 // New returns a logger that writes to an analytics ark db.
@@ -109,6 +113,13 @@ func New(c Config) (*Logger, error) {
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
+
+	if c.ErrLogger != nil {
+		al.errLogger = c.ErrLogger
+	} else {
+		al.errLogger = logger.New(al.fhStream)
+	}
+
 	return al, nil
 }
 
@@ -136,7 +147,17 @@ func (al *Logger) Write(bs []byte) (int, error) {
 		al.batch = []*firehose.Record{}
 		al.batchBytes = 0
 		// be careful not to send al.batch, since we will unlock before we finish sending the batch
-		go sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
+		al.sendBatchWG.Add(1)
+		go func() {
+			err = sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
+			al.sendBatchWG.Done()
+			if err != nil {
+				al.errLogger.ErrorD("send-batch-error", logger.M{
+					"stream": al.fhStream,
+					"error":  err.Error(),
+				})
+			}
+		}()
 	}
 	al.mu.Unlock()
 	return len(bs), nil
@@ -147,12 +168,17 @@ func (al *Logger) Close() error {
 	al.mu.Lock()
 	if len(al.batch) > 0 {
 		batch := al.batch
-		al.batch = []*firehose.Record{}
-		al.batchBytes = 0
 		// be careful not to send al.batch, since we will unlock before we finish sending the batch
-		go sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
+		err := sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
+		if err != nil {
+			al.errLogger.ErrorD("send-batch-error", logger.M{
+				"stream": al.fhStream,
+				"error":  err.Error(),
+			})
+		}
 	}
 	al.mu.Unlock()
+	al.sendBatchWG.Wait()
 	return nil
 }
 
@@ -172,10 +198,10 @@ func sendBatch(batch []*firehose.Record, fhAPI firehoseiface.FirehoseAPI, fhStre
 			result = out
 			return nil
 		}); err != nil {
-			return fmt.Errorf("PutRecords: %v", err)
+			return err
 		}
 		if aws.Int64Value(result.FailedPutCount) == 0 {
-			break
+			return nil
 		}
 		// formulate a new batch consisting of the unprocessed items
 		newbatch := []*firehose.Record{}
@@ -187,7 +213,7 @@ func sendBatch(batch []*firehose.Record, fhAPI firehoseiface.FirehoseAPI, fhStre
 		}
 		batch = newbatch
 	}
-	return nil
+	return fmt.Errorf("timed out sending events: %d remaining", len(batch))
 }
 
 func min(a, b int) int {
