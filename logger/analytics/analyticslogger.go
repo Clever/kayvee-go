@@ -20,7 +20,7 @@ import (
 
 //go:generate mockgen -package $GOPACKAGE -destination mock_firehose.go github.com/aws/aws-sdk-go/service/firehose/firehoseiface FirehoseAPI
 
-// Logger writes to Firehose instead of the logging pipeline
+// Logger writes to Firehose.
 type Logger struct {
 	logger.KayveeLogger
 	errLogger       logger.KayveeLogger
@@ -105,11 +105,16 @@ func New(c Config) (*Logger, error) {
 	}
 
 	if c.FirehoseAPI != nil {
-		al.fhAPI = c.FirehoseAPI
+		// make an effort to override endpoint resolver
+		if f, ok := c.FirehoseAPI.(*firehose.Firehose); ok {
+			f.Client.Config.EndpointResolver = endpointResolver
+			al.fhAPI = f
+		} else {
+			al.fhAPI = c.FirehoseAPI
+		}
 	} else if c.Region != "" {
-		al.fhAPI = firehose.New(session.New(&aws.Config{
-			Region: aws.String(c.Region),
-		}))
+		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(endpointResolver)
+		al.fhAPI = firehose.New(session.New(config))
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
