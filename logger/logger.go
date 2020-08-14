@@ -319,6 +319,11 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 	for k, v := range contextValues {
 		updateContextMapIfNotReserved(context, k, v)
 	}
+	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
+		context["team"] = teamName
+	} else if teamName := os.Getenv("TEAM_OWNER"); teamName != "" {
+		context["team"] = teamName
+	}
 	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
 		context["deploy_env"] = v
 	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
