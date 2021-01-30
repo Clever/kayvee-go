@@ -2,6 +2,7 @@ package logger
 
 import (
 	"io"
+	"sync"
 
 	"gopkg.in/Clever/kayvee-go.v6/router"
 )
@@ -58,6 +59,7 @@ func NewMockCountLoggerWithContext(source string, contextValues map[string]inter
 // routeCountingFormatLogger implements the formatLogger interface to allow for counting
 // invocations of routing rules.
 type routeCountingFormatLogger struct {
+	mu           sync.Mutex
 	routeMatches map[string][]router.RuleOutput
 }
 
@@ -74,7 +76,9 @@ func (fl *routeCountingFormatLogger) formatAndLog(data map[string]interface{}) {
 	}
 	for _, route := range routes.([]map[string]interface{}) {
 		rule := route["rule"].(string)
+		fl.mu.Lock()
 		fl.routeMatches[rule] = append(fl.routeMatches[rule], route)
+		fl.mu.Unlock()
 	}
 }
 
