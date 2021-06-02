@@ -26,7 +26,7 @@ func TestLogger(t *testing.T) {
 				mf.EXPECT().PutRecordBatch(&firehose.PutRecordBatchInput{
 					DeliveryStreamName: aws.String("testenv--testdb"),
 					Records: []*firehose.Record{
-						&firehose.Record{Data: []byte(`{"foo":"bar"}
+						{Data: []byte(`{"foo":"bar"}
 `)},
 					},
 				}).Return(&firehose.PutRecordBatchOutput{FailedPutCount: aws.Int64(0)}, nil)

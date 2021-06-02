@@ -33,4 +33,7 @@ func environmentVariableEndpointResolver(service, region string, optFns ...func(
 	return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 }
 
-var endpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
+// EndpointResolver is used to override the endpoints that AWS clients use. In
+// particular for reducing networking costs for cross-region traffic, we sometimes
+// use a VPC endpoint rather than going through the public internet and a NAT Gateway
+var EndpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
