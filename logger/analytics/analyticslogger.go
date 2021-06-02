@@ -28,8 +28,10 @@ type Logger struct {
 	fhAPI           firehoseiface.FirehoseAPI
 	batch           []*firehose.Record
 	batchBytes      int
+	batchOldestTime *time.Time
 	maxBatchRecords int
 	maxBatchBytes   int
+	maxBatchTime    time.Duration
 	mu              sync.Mutex
 	sendBatchWG     sync.WaitGroup
 }
@@ -107,13 +109,13 @@ func New(c Config) (*Logger, error) {
 	if c.FirehoseAPI != nil {
 		// make an effort to override endpoint resolver
 		if f, ok := c.FirehoseAPI.(*firehose.Firehose); ok {
-			f.Client.Config.EndpointResolver = endpointResolver
+			f.Client.Config.EndpointResolver = EndpointResolver
 			al.fhAPI = f
 		} else {
 			al.fhAPI = c.FirehoseAPI
 		}
 	} else if c.Region != "" {
-		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(endpointResolver)
+		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(EndpointResolver)
 		al.fhAPI = firehose.New(session.New(config))
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
@@ -146,11 +148,17 @@ func (al *Logger) Write(bs []byte) (int, error) {
 	al.mu.Lock()
 	al.batchBytes += len(bs)
 	al.batch = append(al.batch, &firehose.Record{Data: bs})
-	shouldSendBatch := len(al.batch) == al.maxBatchRecords || al.batchBytes > int(0.9*float64(al.maxBatchBytes))
+	if al.batchOldestTime == nil {
+		al.batchOldestTime = aws.Time(time.Now())
+	}
+	shouldSendBatch := len(al.batch) == al.maxBatchRecords ||
+		al.batchBytes > int(0.9*float64(al.maxBatchBytes)) ||
+		(al.maxBatchTime != 0 && time.Now().After(al.batchOldestTime.Add(al.maxBatchTime)))
 	if shouldSendBatch {
 		batch := al.batch
 		al.batch = []*firehose.Record{}
 		al.batchBytes = 0
+		al.batchOldestTime = nil
 		// be careful not to send al.batch, since we will unlock before we finish sending the batch
 		al.sendBatchWG.Add(1)
 		go func() {

@@ -33,4 +33,4 @@ func environmentVariableEndpointResolver(service, region string, optFns ...func(
 	return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 }
 
-var endpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
+var EndpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
