@@ -51,6 +51,10 @@ const firehosePutRecordBatchMaxRecords = 500
 // https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html
 const firehosePutRecordBatchMaxBytes = 4000000
 
+// firehosePutRecordBatchMaxTime is a default max time before sending a batch, so that events
+// don't get stuck indefinitely. It can be overridden.
+const firehosePutRecordBatchMaxTime = 10 * time.Minute
+
 // Config configures things related to collecting analytics.
 type Config struct {
 	// DBName is the name of the ark db. Either specify this or StreamName.
@@ -65,6 +69,8 @@ type Config struct {
 	FirehosePutRecordBatchMaxRecords int
 	// FirehosePutRecordBatchMaxBytes overrides the default value (4000000) for the maximum number of bytes to send in a firehose batch.
 	FirehosePutRecordBatchMaxBytes int
+	// FirehosePutRecordBatchMaxTime overrides the default value (10 minutes) for the maximum amount of time between writing an event and sending to the firehose.
+	FirehosePutRecordBatchMaxTime time.Duration
 	// FirehoseAPI defaults to an API object configured with Region, but can be overriden here.
 	FirehoseAPI firehoseiface.FirehoseAPI
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
@@ -105,6 +111,11 @@ func New(c Config) (*Logger, error) {
 	} else {
 		al.maxBatchBytes = firehosePutRecordBatchMaxBytes
 	}
+	if v := c.FirehosePutRecordBatchMaxTime; v > 0 {
+		al.maxBatchTime = v
+	} else {
+		al.maxBatchTime = firehosePutRecordBatchMaxTime
+	}
 
 	if c.FirehoseAPI != nil {
 		// make an effort to override endpoint resolver
@@ -116,7 +127,11 @@ func New(c Config) (*Logger, error) {
 		}
 	} else if c.Region != "" {
 		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(EndpointResolver)
-		al.fhAPI = firehose.New(session.New(config))
+		sess, err := session.NewSession(config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating firehose client: %v", err)
+		}
+		al.fhAPI = firehose.New(sess)
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
