@@ -211,6 +211,7 @@ func (ksl *Logger) flush() {
 		// be careful not to send ksl.batch, since we will unlock before we finish sending the batch
 		ksl.sendBatchWG.Add(1)
 		go func() {
+			defer ksl.sendBatchWG.Done()
 			err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
 			if err != nil {
 				ksl.errLogger.ErrorD("send-batch-error", logger.M{
@@ -218,7 +219,6 @@ func (ksl *Logger) flush() {
 					"error":  err.Error(),
 				})
 			}
-			ksl.sendBatchWG.Done()
 		}()
 	}
 }

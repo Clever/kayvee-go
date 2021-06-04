@@ -196,6 +196,7 @@ func (al *Logger) flush() {
 		// be careful not to send al.batch, since we will unlock before we finish sending the batch
 		al.sendBatchWG.Add(1)
 		go func() {
+			defer al.sendBatchWG.Done()
 			err := sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
 			if err != nil {
 				al.errLogger.ErrorD("send-batch-error", logger.M{
@@ -203,7 +204,6 @@ func (al *Logger) flush() {
 					"error":  err.Error(),
 				})
 			}
-			al.sendBatchWG.Done()
 		}()
 	}
 }
