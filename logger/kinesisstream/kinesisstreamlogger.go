@@ -23,7 +23,7 @@ import (
 
 //go:generate mockgen -package $GOPACKAGE -destination mock_kinesis.go github.com/aws/aws-sdk-go/service/kinesis/kinesisiface KinesisAPI
 
-// Logger writes to Firehose.
+// Logger writes to Kinesis.
 type Logger struct {
 	logger.KayveeLogger
 	errLogger       logger.KayveeLogger
@@ -31,10 +31,10 @@ type Logger struct {
 	kinesisAPI      kinesisiface.KinesisAPI
 	batch           []*kinesis.PutRecordsRequestEntry
 	batchBytes      int
-	batchOldestTime *time.Time
 	maxBatchRecords int
 	maxBatchBytes   int
-	maxBatchTime    time.Duration
+	sendingTicker   *time.Ticker
+	done            chan bool
 	mu              sync.Mutex
 	sendBatchWG     sync.WaitGroup
 }
@@ -58,20 +58,26 @@ const kinesisPutRecordBatchMaxRecords = 500
 // https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
 const kinesisPutRecordBatchMaxBytes = 5000000
 
+// kinesisPutRecordBatchMaxTime is a default max time before sending a batch, so that events
+// don't get stuck indefinitely. It can be overridden.
+const kinesisPutRecordBatchMaxTime = 10 * time.Minute
+
 // Config configures things related to collecting analytics.
 type Config struct {
 	// DBName is the name of the ark db. Either specify this or StreamName.
 	DBName string
 	// Environment is the name of the environment to point to. Default is _DEPLOY_ENV.
 	Environment string
-	// StreamName is the name of the Firehose to send to. Either specify this or DBName.
+	// StreamName is the name of the Kinesis stream to send to. Either specify this or DBName.
 	StreamName string
 	// Region is the region where this is running. Defaults to _POD_REGION.
 	Region string
-	// KinesisPutRecordBatchMaxRecords overrides the default value (500) for the maximum number of records to send in a firehose batch.
+	// KinesisPutRecordBatchMaxRecords overrides the default value (500) for the maximum number of records to send in a batch.
 	KinesisPutRecordBatchMaxRecords int
-	// KinesisPutRecordBatchMaxBytes overrides the default value (5000000) for the maximum number of bytes to send in a firehose batch.
+	// KinesisPutRecordBatchMaxBytes overrides the default value (5000000) for the maximum number of bytes to send in as batch.
 	KinesisPutRecordBatchMaxBytes int
+	// KinesisPutRecordBatchMaxTime overrides the default value (10 minutes) for the maximum amount of time between writing an event and sending to the stream.
+	KinesisPutRecordBatchMaxTime time.Duration
 	// KinesisAPI defaults to an API object configured with Region, but can be overriden here.
 	KinesisAPI kinesisiface.KinesisAPI
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
@@ -112,6 +118,12 @@ func New(c Config) (*Logger, error) {
 	} else {
 		ksl.maxBatchBytes = kinesisPutRecordBatchMaxBytes
 	}
+	if v := c.KinesisPutRecordBatchMaxTime; v > 0 {
+		ksl.sendingTicker = time.NewTicker(v)
+	} else {
+		ksl.sendingTicker = time.NewTicker(kinesisPutRecordBatchMaxTime)
+	}
+	ksl.done = make(chan bool)
 
 	if c.KinesisAPI != nil {
 		// make an effort to override endpoint resolver
@@ -129,7 +141,7 @@ func New(c Config) (*Logger, error) {
 		}
 		ksl.kinesisAPI = kinesis.New(sess)
 	} else {
-		return nil, errors.New("must provide FirehoseAPI or Region")
+		return nil, errors.New("must provide KinesisAPI or Region")
 	}
 
 	if c.ErrLogger != nil {
@@ -137,6 +149,17 @@ func New(c Config) (*Logger, error) {
 	} else {
 		ksl.errLogger = logger.New(ksl.kinesisStream)
 	}
+
+	go func() {
+		for {
+			select {
+			case <-ksl.done:
+				return
+			case <-ksl.sendingTicker.C:
+				ksl.flush()
+			}
+		}
+	}()
 
 	return ksl, nil
 }
@@ -167,22 +190,29 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 		Data:         bs,
 		PartitionKey: &partitionKey,
 	})
-	if ksl.batchOldestTime == nil {
-		ksl.batchOldestTime = aws.Time(time.Now())
-	}
 	shouldSendBatch := len(ksl.batch) == ksl.maxBatchRecords ||
-		ksl.batchBytes > int(0.9*float64(ksl.maxBatchBytes)) ||
-		(ksl.maxBatchTime != 0 && time.Now().After(ksl.batchOldestTime.Add(ksl.maxBatchTime)))
+		ksl.batchBytes > int(0.9*float64(ksl.maxBatchBytes))
+	ksl.mu.Unlock()
+
 	if shouldSendBatch {
+		ksl.flush()
+	}
+	return len(bs), nil
+}
+
+// flush asynchronously flushes a batch to kinesis
+func (ksl *Logger) flush() {
+	ksl.mu.Lock()
+	defer ksl.mu.Unlock()
+	if len(ksl.batch) > 0 {
 		batch := ksl.batch
 		ksl.batch = nil
 		ksl.batchBytes = 0
-		ksl.batchOldestTime = nil
 		// be careful not to send ksl.batch, since we will unlock before we finish sending the batch
 		ksl.sendBatchWG.Add(1)
 		go func() {
-			err = sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
-			ksl.sendBatchWG.Done()
+			defer ksl.sendBatchWG.Done()
+			err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
 			if err != nil {
 				ksl.errLogger.ErrorD("send-batch-error", logger.M{
 					"stream": ksl.kinesisStream,
@@ -191,25 +221,13 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 			}
 		}()
 	}
-	ksl.mu.Unlock()
-	return len(bs), nil
 }
 
 // Close flushes all logs to Kinesis.
 func (ksl *Logger) Close() error {
-	ksl.mu.Lock()
-	if len(ksl.batch) > 0 {
-		batch := ksl.batch
-		// be careful not to send ksl.batch, since we will unlock before we finish sending the batch
-		err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
-		if err != nil {
-			ksl.errLogger.ErrorD("send-batch-error", logger.M{
-				"stream": ksl.kinesisStream,
-				"error":  err.Error(),
-			})
-		}
-	}
-	ksl.mu.Unlock()
+	ksl.sendingTicker.Stop()
+	ksl.done <- true
+	ksl.flush()
 	ksl.sendBatchWG.Wait()
 	return nil
 }

@@ -28,10 +28,10 @@ type Logger struct {
 	fhAPI           firehoseiface.FirehoseAPI
 	batch           []*firehose.Record
 	batchBytes      int
-	batchOldestTime *time.Time
 	maxBatchRecords int
 	maxBatchBytes   int
-	maxBatchTime    time.Duration
+	sendingTicker   *time.Ticker
+	done            chan bool
 	mu              sync.Mutex
 	sendBatchWG     sync.WaitGroup
 }
@@ -51,6 +51,10 @@ const firehosePutRecordBatchMaxRecords = 500
 // https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html
 const firehosePutRecordBatchMaxBytes = 4000000
 
+// firehosePutRecordBatchMaxTime is a default max time before sending a batch, so that events
+// don't get stuck indefinitely. It can be overridden.
+const firehosePutRecordBatchMaxTime = 10 * time.Minute
+
 // Config configures things related to collecting analytics.
 type Config struct {
 	// DBName is the name of the ark db. Either specify this or StreamName.
@@ -65,6 +69,8 @@ type Config struct {
 	FirehosePutRecordBatchMaxRecords int
 	// FirehosePutRecordBatchMaxBytes overrides the default value (4000000) for the maximum number of bytes to send in a firehose batch.
 	FirehosePutRecordBatchMaxBytes int
+	// FirehosePutRecordBatchMaxTime overrides the default value (10 minutes) for the maximum amount of time between writing an event and sending to the firehose.
+	FirehosePutRecordBatchMaxTime time.Duration
 	// FirehoseAPI defaults to an API object configured with Region, but can be overriden here.
 	FirehoseAPI firehoseiface.FirehoseAPI
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
@@ -105,6 +111,12 @@ func New(c Config) (*Logger, error) {
 	} else {
 		al.maxBatchBytes = firehosePutRecordBatchMaxBytes
 	}
+	if v := c.FirehosePutRecordBatchMaxTime; v > 0 {
+		al.sendingTicker = time.NewTicker(v)
+	} else {
+		al.sendingTicker = time.NewTicker(firehosePutRecordBatchMaxTime)
+	}
+	al.done = make(chan bool)
 
 	if c.FirehoseAPI != nil {
 		// make an effort to override endpoint resolver
@@ -116,7 +128,11 @@ func New(c Config) (*Logger, error) {
 		}
 	} else if c.Region != "" {
 		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(EndpointResolver)
-		al.fhAPI = firehose.New(session.New(config))
+		sess, err := session.NewSession(config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating firehose client: %v", err)
+		}
+		al.fhAPI = firehose.New(sess)
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
@@ -126,6 +142,17 @@ func New(c Config) (*Logger, error) {
 	} else {
 		al.errLogger = logger.New(al.fhStream)
 	}
+
+	go func() {
+		for {
+			select {
+			case <-al.done:
+				return
+			case <-al.sendingTicker.C:
+				al.flush()
+			}
+		}
+	}()
 
 	return al, nil
 }
@@ -148,22 +175,29 @@ func (al *Logger) Write(bs []byte) (int, error) {
 	al.mu.Lock()
 	al.batchBytes += len(bs)
 	al.batch = append(al.batch, &firehose.Record{Data: bs})
-	if al.batchOldestTime == nil {
-		al.batchOldestTime = aws.Time(time.Now())
-	}
 	shouldSendBatch := len(al.batch) == al.maxBatchRecords ||
-		al.batchBytes > int(0.9*float64(al.maxBatchBytes)) ||
-		(al.maxBatchTime != 0 && time.Now().After(al.batchOldestTime.Add(al.maxBatchTime)))
+		al.batchBytes > int(0.9*float64(al.maxBatchBytes))
+	al.mu.Unlock()
+
 	if shouldSendBatch {
+		al.flush()
+	}
+	return len(bs), nil
+}
+
+// flush asynchronously flushes a batch to kinesis
+func (al *Logger) flush() {
+	al.mu.Lock()
+	defer al.mu.Unlock()
+	if len(al.batch) > 0 {
 		batch := al.batch
-		al.batch = []*firehose.Record{}
+		al.batch = nil
 		al.batchBytes = 0
-		al.batchOldestTime = nil
 		// be careful not to send al.batch, since we will unlock before we finish sending the batch
 		al.sendBatchWG.Add(1)
 		go func() {
-			err = sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
-			al.sendBatchWG.Done()
+			defer al.sendBatchWG.Done()
+			err := sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
 			if err != nil {
 				al.errLogger.ErrorD("send-batch-error", logger.M{
 					"stream": al.fhStream,
@@ -172,25 +206,13 @@ func (al *Logger) Write(bs []byte) (int, error) {
 			}
 		}()
 	}
-	al.mu.Unlock()
-	return len(bs), nil
 }
 
 // Close flushes all logs to Firehose.
 func (al *Logger) Close() error {
-	al.mu.Lock()
-	if len(al.batch) > 0 {
-		batch := al.batch
-		// be careful not to send al.batch, since we will unlock before we finish sending the batch
-		err := sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
-		if err != nil {
-			al.errLogger.ErrorD("send-batch-error", logger.M{
-				"stream": al.fhStream,
-				"error":  err.Error(),
-			})
-		}
-	}
-	al.mu.Unlock()
+	al.sendingTicker.Stop()
+	al.done <- true
+	al.flush()
 	al.sendBatchWG.Wait()
 	return nil
 }
