@@ -31,10 +31,10 @@ type Logger struct {
 	kinesisAPI      kinesisiface.KinesisAPI
 	batch           []*kinesis.PutRecordsRequestEntry
 	batchBytes      int
-	batchOldestTime *time.Time
 	maxBatchRecords int
 	maxBatchBytes   int
-	maxBatchTime    time.Duration
+	sendingTicker   *time.Ticker
+	done            chan bool
 	mu              sync.Mutex
 	sendBatchWG     sync.WaitGroup
 }
@@ -119,10 +119,11 @@ func New(c Config) (*Logger, error) {
 		ksl.maxBatchBytes = kinesisPutRecordBatchMaxBytes
 	}
 	if v := c.KinesisPutRecordBatchMaxTime; v > 0 {
-		ksl.maxBatchTime = v
+		ksl.sendingTicker = time.NewTicker(v)
 	} else {
-		ksl.maxBatchTime = kinesisPutRecordBatchMaxTime
+		ksl.sendingTicker = time.NewTicker(kinesisPutRecordBatchMaxTime)
 	}
+	ksl.done = make(chan bool)
 
 	if c.KinesisAPI != nil {
 		// make an effort to override endpoint resolver
@@ -148,6 +149,17 @@ func New(c Config) (*Logger, error) {
 	} else {
 		ksl.errLogger = logger.New(ksl.kinesisStream)
 	}
+
+	go func() {
+		for {
+			select {
+			case <-ksl.done:
+				return
+			case <-ksl.sendingTicker.C:
+				ksl.flush()
+			}
+		}
+	}()
 
 	return ksl, nil
 }
@@ -178,21 +190,28 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 		Data:         bs,
 		PartitionKey: &partitionKey,
 	})
-	if ksl.batchOldestTime == nil {
-		ksl.batchOldestTime = aws.Time(time.Now())
-	}
 	shouldSendBatch := len(ksl.batch) == ksl.maxBatchRecords ||
-		ksl.batchBytes > int(0.9*float64(ksl.maxBatchBytes)) ||
-		(ksl.maxBatchTime != 0 && time.Now().After(ksl.batchOldestTime.Add(ksl.maxBatchTime)))
+		ksl.batchBytes > int(0.9*float64(ksl.maxBatchBytes))
+	ksl.mu.Unlock()
+
 	if shouldSendBatch {
+		ksl.flush()
+	}
+	return len(bs), nil
+}
+
+// flush asynchronously flushes a batch to kinesis
+func (ksl *Logger) flush() error {
+	ksl.mu.Lock()
+	defer ksl.mu.Unlock()
+	if len(ksl.batch) > 0 {
 		batch := ksl.batch
 		ksl.batch = nil
 		ksl.batchBytes = 0
-		ksl.batchOldestTime = nil
 		// be careful not to send ksl.batch, since we will unlock before we finish sending the batch
 		ksl.sendBatchWG.Add(1)
 		go func() {
-			err = sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
+			err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
 			ksl.sendBatchWG.Done()
 			if err != nil {
 				ksl.errLogger.ErrorD("send-batch-error", logger.M{
@@ -202,25 +221,14 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 			}
 		}()
 	}
-	ksl.mu.Unlock()
-	return len(bs), nil
+	return nil
 }
 
 // Close flushes all logs to Kinesis.
 func (ksl *Logger) Close() error {
-	ksl.mu.Lock()
-	if len(ksl.batch) > 0 {
-		batch := ksl.batch
-		// be careful not to send ksl.batch, since we will unlock before we finish sending the batch
-		err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
-		if err != nil {
-			ksl.errLogger.ErrorD("send-batch-error", logger.M{
-				"stream": ksl.kinesisStream,
-				"error":  err.Error(),
-			})
-		}
-	}
-	ksl.mu.Unlock()
+	ksl.sendingTicker.Stop()
+	ksl.done <- true
+	ksl.flush()
 	ksl.sendBatchWG.Wait()
 	return nil
 }
