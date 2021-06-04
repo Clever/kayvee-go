@@ -197,13 +197,13 @@ func (al *Logger) flush() {
 		al.sendBatchWG.Add(1)
 		go func() {
 			err := sendBatch(batch, al.fhAPI, al.fhStream, time.Now().Add(timeoutForSendingBatches))
-			al.sendBatchWG.Done()
 			if err != nil {
 				al.errLogger.ErrorD("send-batch-error", logger.M{
 					"stream": al.fhStream,
 					"error":  err.Error(),
 				})
 			}
+			al.sendBatchWG.Done()
 		}()
 	}
 }

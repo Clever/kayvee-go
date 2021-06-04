@@ -212,13 +212,13 @@ func (ksl *Logger) flush() {
 		ksl.sendBatchWG.Add(1)
 		go func() {
 			err := sendBatch(batch, ksl.kinesisAPI, ksl.kinesisStream, time.Now().Add(timeoutForSendingBatches))
-			ksl.sendBatchWG.Done()
 			if err != nil {
 				ksl.errLogger.ErrorD("send-batch-error", logger.M{
 					"stream": ksl.kinesisStream,
 					"error":  err.Error(),
 				})
 			}
+			ksl.sendBatchWG.Done()
 		}()
 	}
 }
