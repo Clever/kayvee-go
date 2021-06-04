@@ -201,7 +201,7 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 }
 
 // flush asynchronously flushes a batch to kinesis
-func (ksl *Logger) flush() error {
+func (ksl *Logger) flush() {
 	ksl.mu.Lock()
 	defer ksl.mu.Unlock()
 	if len(ksl.batch) > 0 {
@@ -221,7 +221,6 @@ func (ksl *Logger) flush() error {
 			}
 		}()
 	}
-	return nil
 }
 
 // Close flushes all logs to Kinesis.

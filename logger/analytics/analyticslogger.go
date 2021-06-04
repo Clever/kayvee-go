@@ -186,7 +186,7 @@ func (al *Logger) Write(bs []byte) (int, error) {
 }
 
 // flush asynchronously flushes a batch to kinesis
-func (al *Logger) flush() error {
+func (al *Logger) flush() {
 	al.mu.Lock()
 	defer al.mu.Unlock()
 	if len(al.batch) > 0 {
@@ -206,7 +206,6 @@ func (al *Logger) flush() error {
 			}
 		}()
 	}
-	return nil
 }
 
 // Close flushes all logs to Firehose.
