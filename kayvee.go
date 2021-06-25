@@ -2,6 +2,7 @@ package kayvee
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
@@ -78,7 +79,10 @@ func Format(data map[string]interface{}) string {
 	if podAccount != "" {
 		data["pod-account"] = podAccount
 	}
-	formattedString, _ := json.Marshal(data)
+	formattedString, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Sprintf("%#v", data)
+	}
 	return string(formattedString)
 }
 
