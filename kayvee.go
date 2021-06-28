@@ -81,7 +81,13 @@ func Format(data map[string]interface{}) string {
 	}
 	formattedString, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Sprintf("%#v", data)
+		for k, v := range data {
+			_, err := json.Marshal(v)
+			if err != nil {
+				data[k] = fmt.Sprintf("Error marshaling value in map, err: %s, value: %+v", err.Error(), v)
+			}
+		}
+		formattedString, _ = json.Marshal(data)
 	}
 	return string(formattedString)
 }

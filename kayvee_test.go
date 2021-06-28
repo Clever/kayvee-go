@@ -68,3 +68,19 @@ func Test_KayveeSpecs(t *testing.T) {
 		compareJSONStrings(t, expected, actual)
 	}
 }
+
+type X struct {
+	A string
+	B func()
+}
+
+func Test_MapWithInterfaceWithFunctionField(t *testing.T) {
+	x := &X{A: "TEST"}
+	data := make(map[string]interface{})
+	data["pointer"] = x
+	data["x"] = *x
+
+	expected := "\"pointer\":\"Error marshaling value in map, err: json: unsupported type: func(), value:"
+	out := FormatLog("test_source", "test_level", "test_title", data)
+	assert.Contains(t, out, expected)
+}
