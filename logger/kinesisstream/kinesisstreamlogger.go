@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Clever/kayvee-go/logger/analytics"
+	"github.com/Clever/kayvee-go/v7/logger/analytics"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"

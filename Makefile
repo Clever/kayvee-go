@@ -3,7 +3,7 @@ include golang.mk
 
 .PHONY: test benchmark-data clean bump-major bump-minor bump-patch tag-version $(PKGS)
 SHELL := /bin/bash
-PKGS = $(shell go list ./...)
+PKGS = $(shell go list ./... | grep -v /vendor | grep -v /tools)
 $(eval $(call golang-version-check,1.13))
 
 export _DEPLOY_ENV=testing
@@ -69,7 +69,7 @@ tests.json:
 	cp tests.json test/tests.json
 
 
-install_deps: golang-dep-vendor-deps
-	$(call golang-dep-vendor)
+install_deps:
+	go mod vendor
 	go build -o bin/mockgen ./vendor/github.com/golang/mock/mockgen
 	cp bin/mockgen $(GOPATH)/bin/mockgen
