@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	kv "gopkg.in/Clever/kayvee-go.v6"
-	"gopkg.in/Clever/kayvee-go.v6/router"
+	kv "github.com/Clever/kayvee-go/v7"
+	"github.com/Clever/kayvee-go/v7/router"
 )
 
 /////////////////////

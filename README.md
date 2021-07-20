@@ -1,6 +1,6 @@
 # kayvee
 ```golang
-import "gopkg.in/Clever/kayvee-go.v6"
+import "github.com/Clever/kayvee-go/v7"
 ```
 
 Package kayvee provides methods to output human and machine parseable strings,
@@ -8,8 +8,8 @@ with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [gopkg.in/Clever/kayvee-go.v6/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v6/logger)
-* [gopkg.in/Clever/kayvee-go.v6/middleware](https://godoc.org/gopkg.in/Clever/kayvee-go.v6/middleware)
+* [github.com/Clever/kayvee-go/v7/logger](https://godoc.org/github.com/Clever/kayvee-go/v7/logger)
+* [github.com/Clever/kayvee-go/v7/middleware](https://godoc.org/github.com/Clever/kayvee-go/v7/middleware)
 
 ## Examples
 
@@ -23,7 +23,7 @@ import (
     "path"
     "time"
 
-    "gopkg.in/Clever/kayvee-go.v6/logger"
+    "github.com/Clever/kayvee-go/v7/logger"
 )
 
 var log = logger.New("myApp")
@@ -94,7 +94,7 @@ import (
     "testing"
 
     "github.com/stretchr/testify/assert"
-    "gopkg.in/Clever/kayvee-go.v6/logger"
+    "github.com/Clever/kayvee-go/v7/logger"
 )
 
 func init() {
@@ -128,6 +128,7 @@ Slack messages in the `clever-dev` environment are routed to a separate Slack te
 
 ## Change log
 
+- v7.0 - Migrate to Go modules and away from `gopkg.in`.
 - v6.0 - Introduced log-routing
 - v5.0 - Middleware logger now creates a new logger on each request.
   - Breaking change to `middleware.New` constructor.

@@ -12,13 +12,13 @@ import (
 
 	"github.com/Clever/kayvee-go/v7/logger/analytics"
 
+	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
 	"github.com/eapache/go-resiliency/retrier"
-	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 //go:generate mockgen -package $GOPACKAGE -destination mock_kinesis.go github.com/aws/aws-sdk-go/service/kinesis/kinesisiface KinesisAPI
