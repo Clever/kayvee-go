@@ -3,10 +3,10 @@ package analytics
 import (
 	"testing"
 
+	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/firehose"
 	gomock "github.com/golang/mock/gomock"
-	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 func TestLogger(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	kv "github.com/Clever/kayvee-go/v7"
+	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/stretchr/testify/assert"
-	kv "gopkg.in/Clever/kayvee-go.v6"
-	"gopkg.in/Clever/kayvee-go.v6/logger"
 )
 
 type bufferWriter struct {

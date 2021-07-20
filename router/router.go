@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	kv "gopkg.in/Clever/kayvee-go.v6"
+	kv "github.com/Clever/kayvee-go/v7"
 )
 
 var teamName string
