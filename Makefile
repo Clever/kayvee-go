@@ -72,4 +72,4 @@ tests.json:
 
 install_deps:
 	go mod vendor
-	go build -o bin/mockgen ./vendor/github.com/golang/mock/mockgen
+	go build -o bin/mockgen github.com/golang/mock/mockgen

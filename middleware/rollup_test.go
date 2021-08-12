@@ -70,7 +70,6 @@ func TestProcess(t *testing.T) {
 				"status-code":   200,
 				"op":            "healthCheck",
 				"method":        "GET",
-				"canary":        false,
 				"response-time": 100 * time.Millisecond,
 			})
 		}()
@@ -84,7 +83,6 @@ func TestProcess(t *testing.T) {
 		{
 			Title: "request-finished-rollup",
 			Data: map[string]interface{}{
-				"canary":               false,
 				"count":                int64(100),
 				"op":                   "healthCheck",
 				"method":               "GET",
@@ -109,20 +107,17 @@ func TestShouldRollup(t *testing.T) {
 			"status-code":   200,
 			"op":            "getApps",
 			"method":        "GET",
-			"canary":        true,
 			"response-time": 600 * time.Millisecond, // too slow
 		},
 		map[string]interface{}{
 			"status-code":   500, // not a 200
 			"op":            "getApps",
 			"method":        "GET",
-			"canary":        true,
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
 			"status-code": 200,
 			// no "op" or "method" field
-			"canary":        true,
 			"response-time": 50 * time.Millisecond,
 		},
 	} {
@@ -135,14 +130,12 @@ func TestShouldRollup(t *testing.T) {
 			"status-code":   200,
 			"op":            "getAppByID",
 			"method":        "GET",
-			"canary":        true,
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
 			"status-code":   200,
 			"op":            "getAdminByID",
 			"method":        "GET",
-			"canary":        true,
 			"response-time": 400 * time.Millisecond,
 		},
 	} {
