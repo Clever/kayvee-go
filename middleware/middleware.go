@@ -11,8 +11,6 @@ package middleware
 
 import (
 	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/Clever/kayvee-go/v7/logger"
@@ -37,7 +35,6 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 type logHandler struct {
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
-	isCanary bool
 	source   string
 }
 
@@ -63,7 +60,6 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		"response-size":    lrw.length,
 		"status-code":      lrw.status,
 		"via":              "kayvee-middleware",
-		"canary":           l.isCanary,
 	})
 
 	// check if the user has opted in to rolling up middleware logs
@@ -102,24 +98,9 @@ func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 // optional handlers to customize the data that's logged.
 // On every request, the middleware will create a logger and place it in req.Context().
 func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
-	isCanary := false
-
-	canaryFlag := os.Getenv("_CANARY")
-	if canaryFlag == "1" {
-		isCanary = true
-	}
-
-	// During the transition to pods, let's keep the canary field accurate
-	// whether it's in the canary pod or a canary container in homepod
-	podShortname := os.Getenv("_POD_SHORTNAME")
-	if strings.Contains(podShortname, "-canary") {
-		isCanary = true
-	}
-
 	return &logHandler{
 		handlers: handlers,
 		h:        h,
-		isCanary: isCanary,
 		source:   source,
 	}
 }

@@ -103,20 +103,13 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if !ok {
 		return
 	}
-	canary, ok := logmsg["canary"].(bool)
-	if !ok {
-		return
-	}
-	r.findOrCreate(statusCode, op, httpMethod, canary).add(logmsg)
+	r.findOrCreate(statusCode, op, httpMethod).add(logmsg)
 }
 
-func (r *RollupRouter) findOrCreate(statusCode int, op, method string, canary bool) *logRollup {
+func (r *RollupRouter) findOrCreate(statusCode int, op, method string) *logRollup {
 	r.rollupsMu.Lock()
 	defer r.rollupsMu.Unlock()
 	rollupKey := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
-	if canary {
-		rollupKey += "-canary"
-	}
 	if rollup, ok := r.rollups[rollupKey]; ok {
 		return rollup
 	}
@@ -126,7 +119,6 @@ func (r *RollupRouter) findOrCreate(statusCode int, op, method string, canary bo
 		StatusCode:       statusCode,
 		Op:               op,
 		HTTPMethod:       method,
-		Canary:           canary,
 	}
 	r.rollups[rollupKey] = rollup
 	go rollup.schedule(r.ctx)
@@ -139,7 +131,6 @@ type logRollup struct {
 	ReportingDelayNs int64
 	StatusCode       int
 	Op               string
-	Canary           bool
 	HTTPMethod       string
 
 	rollupMu                sync.Mutex
@@ -196,7 +187,6 @@ func (r *logRollup) add(logmsg map[string]interface{}) {
 			"status-code": r.StatusCode,
 			"op":          r.Op,
 			"count":       int64(0),
-			"canary":      r.Canary,
 			"method":      r.HTTPMethod,
 			"via":         "kayvee-middleware",
 		}
