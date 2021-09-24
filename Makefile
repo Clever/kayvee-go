@@ -69,6 +69,8 @@ $(PKGS): golang-test-all-strict-deps
 tests.json:
 	cp tests.json test/tests.json
 
+test-local-otel:
+	@./test/otelcol-test.sh
 
 install_deps:
 	go mod vendor

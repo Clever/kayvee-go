@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -131,6 +132,25 @@ func TestLogCounter(t *testing.T) {
 		"logger-tester", kv.Info, "testlogcounter", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "counter", "value": 2}))
 }
 
+func TestLogOTLCounter(t *testing.T) {
+	assert := assert.New(t)
+	logger := New("logger-tester")
+	podID := os.Getenv("_POD_ID")
+	if podID == "" {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.ErrorIs(err, ErrOTLConnection)
+		err = logger.Shutdown()
+		assert.Nil(err)
+	} else {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.Nil(err)
+		logger.Counter("testlogcounter")
+		logger.CounterD("testlogcounter", 2, map[string]interface{}{"key1": "val1", "key2": "val2"})
+		err = logger.Shutdown()
+		assert.Nil(err)
+	}
+}
+
 func TestLogGaugeInt(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
@@ -144,6 +164,25 @@ func TestLogGaugeInt(t *testing.T) {
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4}))
 }
 
+func TestLogOTLGaugeInt(t *testing.T) {
+	assert := assert.New(t)
+	logger := New("logger-tester")
+	podID := os.Getenv("_POD_ID")
+	if podID == "" {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.ErrorIs(err, ErrOTLConnection)
+		err = logger.Shutdown()
+		assert.Nil(err)
+	} else {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.Nil(err)
+		logger.GaugeInt("testloggaugeint", 0)
+		logger.GaugeIntD("testloggaugeint", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
+		err = logger.Shutdown()
+		assert.Nil(err)
+	}
+}
+
 func TestLogGaugeFloat(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
@@ -155,6 +194,25 @@ func TestLogGaugeFloat(t *testing.T) {
 	logger.GaugeFloatD("testloggauge", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, string(buf.Bytes()), kv.FormatLog(
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4.0}))
+}
+
+func TestLogOTLGaugeFloat(t *testing.T) {
+	assert := assert.New(t)
+	logger := New("logger-tester")
+	podID := os.Getenv("_POD_ID")
+	if podID == "" {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.ErrorIs(err, ErrOTLConnection)
+		err = logger.Shutdown()
+		assert.Nil(err)
+	} else {
+		err := logger.SetMetricsOutput(OTLMetrics)
+		assert.Nil(err)
+		logger.GaugeFloat("testloggaugefloat", 0.0)
+		logger.GaugeFloatD("testloggaugefloat", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
+		err = logger.Shutdown()
+		assert.Nil(err)
+	}
 }
 
 func TestDiffOutput(t *testing.T) {

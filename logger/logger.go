@@ -1,14 +1,26 @@
 package logger
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/Clever/kayvee-go/v7/router"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
+	otlController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	otlProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 )
 
 /////////////////////
@@ -63,6 +75,18 @@ func (l LogLevel) String() string {
 	return ""
 }
 
+// MetricsOutput is an enum is used to denote the output of metrics
+type MetricsOutput int
+
+// Constants used to define different MetricsOutput supported
+const (
+	LogMetrics MetricsOutput = iota
+	OTLMetrics
+)
+
+// ErrOTLConnection error returned when no collector is running
+var ErrOTLConnection = fmt.Errorf("cannot connect to opentelemetry colector")
+
 /////////////////////////////
 //
 //	Logger
@@ -72,11 +96,14 @@ func (l LogLevel) String() string {
 // Logger is the default implementation of KayveeLogger.
 // It provides customization of globals, default log level, formatting, and output destination.
 type Logger struct {
-	globalsL  sync.RWMutex
-	globals   map[string]interface{}
-	logLvl    LogLevel
-	fLogger   formatLogger
-	logRouter router.Router
+	globalsL      sync.RWMutex
+	globals       map[string]interface{}
+	logLvl        LogLevel
+	fLogger       formatLogger
+	logRouter     router.Router
+	metricsOutput MetricsOutput
+	otlExporter   *otlpmetric.Exporter
+	otlController *otlController.Controller
 }
 
 var globalRouter router.Router
@@ -155,6 +182,19 @@ func (l *Logger) SetFormatter(formatter Formatter) {
 // SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.fLogger.setOutput(output)
+}
+
+// SetMetricsOutput implements the method for the KayveeLogger interface.
+func (l *Logger) SetMetricsOutput(mo MetricsOutput) error {
+	if mo < 0 || mo > 1 {
+		return fmt.Errorf("non valid metric output passed")
+	}
+	l.metricsOutput = mo
+	if mo == OTLMetrics {
+		return l.setupOtlMetrics()
+	}
+
+	return nil
 }
 
 func (l *Logger) setFormatLogger(fl formatLogger) {
@@ -248,10 +288,16 @@ func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 // CounterD implements the method for the KayveeLogger interface.
 // Logs with type = gauge, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
-	data["title"] = title
-	data["value"] = value
-	data["type"] = "counter"
-	l.logWithLevel(Info, data)
+	if l.metricsOutput == OTLMetrics {
+		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
+		counter := metric.Must(meter).NewInt64Counter(title)
+		counter.Add(context.Background(), int64(value), getLabels(data)...)
+	} else {
+		data["title"] = title
+		data["value"] = value
+		data["type"] = "counter"
+		l.logWithLevel(Info, data)
+	}
 }
 
 // GaugeIntD implements the method for the KayveeLogger interface.
@@ -267,10 +313,23 @@ func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interf
 }
 
 func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
-	data["title"] = title
-	data["value"] = value
-	data["type"] = "gauge"
-	l.logWithLevel(Info, data)
+	if l.metricsOutput == OTLMetrics {
+		ctx := context.Background()
+		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
+		switch v := value.(type) {
+		case int:
+			m := metric.Must(meter).NewInt64Histogram(title)
+			m.Record(ctx, int64(v), getLabels(data)...)
+		case float64:
+			m := metric.Must(meter).NewFloat64Histogram(title)
+			m.Record(ctx, v, getLabels(data)...)
+		}
+	} else {
+		data["title"] = title
+		data["value"] = value
+		data["type"] = "gauge"
+		l.logWithLevel(Info, data)
+	}
 }
 
 // Actual logging. Handles whether to output based on log level and
@@ -299,6 +358,68 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	l.fLogger.formatAndLog(data)
 }
 
+// setupOtlMetrics sets up the opentelemetry metrics exporter
+func (l *Logger) setupOtlMetrics() error {
+	if l.metricsOutput != OTLMetrics {
+		return fmt.Errorf("metrics output is not OTLMetrics")
+	}
+	if _, ok := l.globals["pod-id"]; ok {
+		// check if we can open a connection to the collector
+		conn, err := net.Dial("tcp", "localhost:4317")
+		if err == nil {
+			conn.Close()
+		} else {
+			return ErrOTLConnection
+		}
+
+		ctx := context.Background()
+		otlClient := otlpmetricgrpc.NewClient(
+			otlpmetricgrpc.WithInsecure(),
+		)
+
+		exp, err := otlpmetric.New(ctx, otlClient)
+		if err != nil {
+			return fmt.Errorf("failed to create the otel collector exporter: %v", err)
+		}
+		l.otlExporter = exp
+
+		pusher := otlController.New(
+			otlProcessor.New(
+				simple.NewWithExactDistribution(),
+				exp,
+			),
+			otlController.WithExporter(exp),
+			otlController.WithCollectPeriod(2*time.Second),
+		)
+		l.otlController = pusher
+		global.SetMeterProvider(pusher.MeterProvider())
+
+		if err := pusher.Start(ctx); err != nil {
+			return fmt.Errorf("could not start metric controller: %v", err)
+		}
+
+		return nil
+	}
+
+	return ErrOTLConnection
+}
+
+// Shutdown implements the method for the KayveeLogger interface.
+func (l *Logger) Shutdown() error {
+	if l.metricsOutput == OTLMetrics && l.otlController != nil {
+		ctx := context.Background()
+
+		// shutdown the controller
+		// this pushes any queued exports to the receiver
+		err := l.otlController.Stop(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.
 func updateContextMapIfNotReserved(context M, key string, val interface{}) {
 	if reservedKeyNames[strings.ToLower(key)] {
@@ -315,37 +436,37 @@ func New(source string) KayveeLogger {
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func NewWithContext(source string, contextValues map[string]interface{}) KayveeLogger {
-	context := M{}
+	ctx := M{}
 	for k, v := range contextValues {
-		updateContextMapIfNotReserved(context, k, v)
+		updateContextMapIfNotReserved(ctx, k, v)
 	}
 	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
-		context["team"] = teamName
+		ctx["team"] = teamName
 	} else if teamName := os.Getenv("TEAM_OWNER"); teamName != "" {
-		context["team"] = teamName
+		ctx["team"] = teamName
 	}
 	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
-		context["deploy_env"] = v
+		ctx["deploy_env"] = v
 	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
-		context["deploy_env"] = v
+		ctx["deploy_env"] = v
 	}
 	if os.Getenv("_EXECUTION_NAME") != "" {
-		context["wf_id"] = os.Getenv("_EXECUTION_NAME")
+		ctx["wf_id"] = os.Getenv("_EXECUTION_NAME")
 	}
 	if os.Getenv("_POD_ID") != "" {
-		context["pod-id"] = os.Getenv("_POD_ID")
+		ctx["pod-id"] = os.Getenv("_POD_ID")
 	}
 	if os.Getenv("_POD_SHORTNAME") != "" {
-		context["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
+		ctx["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
 	}
 	if os.Getenv("_POD_REGION") != "" {
-		context["pod-region"] = os.Getenv("_POD_REGION")
+		ctx["pod-region"] = os.Getenv("_POD_REGION")
 	}
 	if os.Getenv("_POD_ACCOUNT") != "" {
-		context["pod-account"] = os.Getenv("_POD_ACCOUNT")
+		ctx["pod-account"] = os.Getenv("_POD_ACCOUNT")
 	}
 	logObj := Logger{
-		globals: context,
+		globals: ctx,
 	}
 
 	fl := defaultFormatLogger{}
@@ -410,4 +531,32 @@ func (fl *defaultFormatLogger) setFormatter(formatter Formatter) {
 // setOutput implements the formatLogger interface for *defaultFormatLogger.
 func (fl *defaultFormatLogger) setOutput(output io.Writer) {
 	fl.logWriter = log.New(output, "", 0) // No prefixes
+}
+
+// getLabels takes a M{} and returns an array of opentelemetry []attribute.KeyValue
+func getLabels(data map[string]interface{}) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{}
+
+	for k, v := range data {
+		switch v := v.(type) {
+		case int:
+			attrs = append(attrs, attribute.Int(k, v))
+		case int32:
+			attrs = append(attrs, attribute.Int64(k, int64(v)))
+		case int64:
+			attrs = append(attrs, attribute.Int64(k, v))
+		case float32:
+			attrs = append(attrs, attribute.Float64(k, float64(v)))
+		case float64:
+			attrs = append(attrs, attribute.Float64(k, v))
+		case string:
+			attrs = append(attrs, attribute.String(k, v))
+		case bool:
+			attrs = append(attrs, attribute.Bool(k, v))
+		default:
+			attrs = append(attrs, attribute.String(k, fmt.Sprintf("%+v", v)))
+		}
+	}
+
+	return attrs
 }
