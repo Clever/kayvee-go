@@ -58,7 +58,7 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 }
 
 // ShouldRollup returns true when a log msg meets the criteria for rollup.
-// In the future allow more configurability, for now default to 200's and < 500ms.
+// In the future allow more configurability, for now default to 2xx's and < 500ms.
 func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
 	if _, ok := logmsg["op"].(string); !ok {
 		return false
@@ -71,7 +71,7 @@ func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
 	statusCode, ok := logmsg["status-code"].(int)
 	if !ok {
 		return false
-	} else if statusCode != 200 {
+	} else if !(statusCode >= 200 && statusCode < 300) {
 		return false
 	}
 
