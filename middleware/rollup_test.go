@@ -95,6 +95,72 @@ func TestProcess(t *testing.T) {
 	})
 }
 
+func TestSameOp2xx(t *testing.T) {
+	mockLogger := &MockRollupLogger{}
+	reportingDelay := 1 * time.Second
+	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
+
+	// send a bunch of data to the rollup router in parallel (since logging can
+	// happen from multiple goroutines) and you should see it logged as a rollup
+	// In this test case see that 2xx are rolled up seperately
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rr.Process(map[string]interface{}{
+				"status-code":   200,
+				"op":            "healthCheck",
+				"method":        "GET",
+				"response-time": 100 * time.Millisecond,
+			})
+		}()
+	}
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rr.Process(map[string]interface{}{
+				"status-code":   201,
+				"op":            "healthCheck",
+				"method":        "GET",
+				"response-time": 100 * time.Millisecond,
+			})
+		}()
+	}
+	wg.Wait()
+
+	// check in shortly after reporting delay
+	time.Sleep(reportingDelay + 500*time.Millisecond)
+
+	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
+		{
+			Title: "request-finished-rollup",
+			Data: map[string]interface{}{
+				"count":                int64(50),
+				"op":                   "healthCheck",
+				"method":               "GET",
+				"response-time-ms":     int64(100),
+				"response-time-ms-sum": int64(100 * 50),
+				"status-code":          200,
+				"via":                  "kayvee-middleware",
+			},
+		},
+		{
+			Title: "request-finished-rollup",
+			Data: map[string]interface{}{
+				"count":                int64(50),
+				"op":                   "healthCheck",
+				"method":               "GET",
+				"response-time-ms":     int64(100),
+				"response-time-ms-sum": int64(100 * 50),
+				"status-code":          201,
+				"via":                  "kayvee-middleware",
+			},
+		},
+	})
+}
+
 func TestShouldRollup(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
 	reportingDelay := 1 * time.Second
@@ -124,7 +190,7 @@ func TestShouldRollup(t *testing.T) {
 		assert.Equal(t, rr.ShouldRollup(falseyInput), false, "expected false return: %v", falseyInput)
 	}
 
-	// 200s that are fast enough should get rolled up
+	// 2xxs that are fast enough should get rolled up
 	for _, truthyInput := range []map[string]interface{}{
 		map[string]interface{}{
 			"status-code":   200,
@@ -133,7 +199,7 @@ func TestShouldRollup(t *testing.T) {
 			"response-time": 100 * time.Millisecond,
 		},
 		map[string]interface{}{
-			"status-code":   200,
+			"status-code":   201,
 			"op":            "getAdminByID",
 			"method":        "GET",
 			"response-time": 400 * time.Millisecond,
