@@ -47,7 +47,8 @@ type KayveeLogger interface {
 	// SetMetricsOutput sets the metrics output to be used
 	SetMetricsOutput(mo MetricsOutput) error
 
-	// Shutdown hadles closing all connections and pushes the queued metrics
+	// Shutdown handles closing all connections and pushes the queued metrics
+	//  - This should be called when using opentelemetry metrics output to ensure all metrics are collected.
 	Shutdown() error
 
 	//

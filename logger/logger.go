@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"strings"
 	"sync"
@@ -85,7 +84,7 @@ const (
 )
 
 // ErrOTLConnection error returned when no collector is running
-var ErrOTLConnection = fmt.Errorf("cannot connect to opentelemetry colector")
+var ErrOTLConnection = fmt.Errorf("cannot connect to opentelemetry collector")
 
 /////////////////////////////
 //
@@ -289,7 +288,9 @@ func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 // Logs with type = gauge, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
 	if l.metricsOutput == OTLMetrics {
+		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
+		l.globalsL.RUnlock()
 		counter := metric.Must(meter).NewInt64Counter(title)
 		counter.Add(context.Background(), int64(value), getLabels(data)...)
 	} else {
@@ -315,7 +316,9 @@ func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interf
 func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
 	if l.metricsOutput == OTLMetrics {
 		ctx := context.Background()
+		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
+		l.globalsL.RUnlock()
 		switch v := value.(type) {
 		case int:
 			m := metric.Must(meter).NewInt64Histogram(title)
@@ -363,14 +366,17 @@ func (l *Logger) setupOtlMetrics() error {
 	if l.metricsOutput != OTLMetrics {
 		return fmt.Errorf("metrics output is not OTLMetrics")
 	}
+	l.globalsL.RLock()
+	defer l.globalsL.RUnlock()
 	if _, ok := l.globals["pod-id"]; ok {
-		// check if we can open a connection to the collector
+		/*/ check if we can open a connection to the collector
 		conn, err := net.Dial("tcp", "localhost:4317")
 		if err == nil {
 			conn.Close()
 		} else {
-			return ErrOTLConnection
-		}
+			l.ErrorD("otel-connection", M{"err": err.Error()})
+			//return ErrOTLConnection
+		}*/
 
 		ctx := context.Background()
 		otlClient := otlpmetricgrpc.NewClient(
