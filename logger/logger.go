@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -366,48 +367,41 @@ func (l *Logger) setupOtlMetrics() error {
 	if l.metricsOutput != OTLMetrics {
 		return fmt.Errorf("metrics output is not OTLMetrics")
 	}
-	l.globalsL.RLock()
-	defer l.globalsL.RUnlock()
-	if _, ok := l.globals["pod-id"]; ok {
-		/*/ check if we can open a connection to the collector
-		conn, err := net.Dial("tcp", "localhost:4317")
-		if err == nil {
-			conn.Close()
-		} else {
-			l.ErrorD("otel-connection", M{"err": err.Error()})
-			//return ErrOTLConnection
-		}*/
-
-		ctx := context.Background()
-		otlClient := otlpmetricgrpc.NewClient(
-			otlpmetricgrpc.WithInsecure(),
-		)
-
-		exp, err := otlpmetric.New(ctx, otlClient)
-		if err != nil {
-			return fmt.Errorf("failed to create the otel collector exporter: %v", err)
-		}
-		l.otlExporter = exp
-
-		pusher := otlController.New(
-			otlProcessor.New(
-				simple.NewWithExactDistribution(),
-				exp,
-			),
-			otlController.WithExporter(exp),
-			otlController.WithCollectPeriod(2*time.Second),
-		)
-		l.otlController = pusher
-		global.SetMeterProvider(pusher.MeterProvider())
-
-		if err := pusher.Start(ctx); err != nil {
-			return fmt.Errorf("could not start metric controller: %v", err)
-		}
-
-		return nil
+	// check if we can open a connection to the collector
+	conn, err := net.Dial("tcp", "localhost:4317")
+	if err == nil {
+		conn.Close()
+	} else {
+		return ErrOTLConnection
 	}
 
-	return ErrOTLConnection
+	ctx := context.Background()
+	otlClient := otlpmetricgrpc.NewClient(
+		otlpmetricgrpc.WithInsecure(),
+	)
+
+	exp, err := otlpmetric.New(ctx, otlClient)
+	if err != nil {
+		return fmt.Errorf("failed to create the otel collector exporter: %v", err)
+	}
+	l.otlExporter = exp
+
+	pusher := otlController.New(
+		otlProcessor.New(
+			simple.NewWithExactDistribution(),
+			exp,
+		),
+		otlController.WithExporter(exp),
+		otlController.WithCollectPeriod(2*time.Second),
+	)
+	l.otlController = pusher
+	global.SetMeterProvider(pusher.MeterProvider())
+
+	if err := pusher.Start(ctx); err != nil {
+		return fmt.Errorf("could not start metric controller: %v", err)
+	}
+
+	return nil
 }
 
 // Shutdown implements the method for the KayveeLogger interface.
