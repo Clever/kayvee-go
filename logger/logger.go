@@ -21,6 +21,7 @@ import (
 	otlController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otlProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 /////////////////////
@@ -386,6 +387,18 @@ func (l *Logger) setupOtlMetrics() error {
 	}
 	l.otlExporter = exp
 
+	// get app data
+	var appName, buildID, deployEnv string
+	if os.Getenv("_POD_ID") != "" {
+		appName = os.Getenv("_APP_NAME")
+		buildID = os.Getenv("_BUILD_ID")
+		deployEnv = os.Getenv("_DEPLOY_ENV")
+	} else if os.Getenv("POD_ID") != "" {
+		appName = os.Getenv("APP_NAME")
+		buildID = os.Getenv("BUILD_ID")
+		deployEnv = os.Getenv("DEPLOY_ENV")
+	}
+
 	pusher := otlController.New(
 		otlProcessor.New(
 			simple.NewWithExactDistribution(),
@@ -393,6 +406,11 @@ func (l *Logger) setupOtlMetrics() error {
 		),
 		otlController.WithExporter(exp),
 		otlController.WithCollectPeriod(2*time.Second),
+		otlController.WithResource(resource.NewSchemaless(
+			attribute.String("service.name", appName),
+			attribute.String("service.version", buildID),
+			attribute.String("env", deployEnv),
+		)),
 	)
 	l.otlController = pusher
 	global.SetMeterProvider(pusher.MeterProvider())
