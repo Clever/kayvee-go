@@ -293,7 +293,9 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
 		l.globalsL.RUnlock()
-		//counter := metric.Must(meter).NewInt64Counter(title)
+		// Use a Int64UpDownCounter counter instead of a Int64Counter DataDog chose not to follow the OTEL spec
+		// this causes the first add to not be counted and reported
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3654
 		counter := metric.Must(meter).NewInt64UpDownCounter(title)
 		counter.Add(context.Background(), int64(value), getLabels(data)...)
 	} else {
