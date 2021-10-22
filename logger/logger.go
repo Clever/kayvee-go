@@ -293,7 +293,8 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
 		l.globalsL.RUnlock()
-		counter := metric.Must(meter).NewInt64Counter(title)
+		//counter := metric.Must(meter).NewInt64Counter(title)
+		counter := metric.Must(meter).NewInt64UpDownCounter(title)
 		counter.Add(context.Background(), int64(value), getLabels(data)...)
 	} else {
 		data["title"] = title
