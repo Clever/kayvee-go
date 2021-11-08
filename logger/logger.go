@@ -287,7 +287,7 @@ func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 }
 
 // CounterD implements the method for the KayveeLogger interface.
-// Logs with type = gauge, and value = value
+// Logs with type = up/down counter, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
 	if l.metricsOutput == OTLMetrics {
 		l.globalsL.RLock()
@@ -371,6 +371,7 @@ func (l *Logger) setupOtlMetrics() error {
 	if l.metricsOutput != OTLMetrics {
 		return fmt.Errorf("metrics output is not OTLMetrics")
 	}
+
 	// check if we can open a connection to the collector
 	conn, err := net.Dial("tcp", "localhost:4317")
 	if err == nil {
@@ -412,7 +413,7 @@ func (l *Logger) setupOtlMetrics() error {
 		otlController.WithResource(resource.NewSchemaless(
 			attribute.String("service.name", appName),
 			attribute.String("service.version", buildID),
-			attribute.String("env", deployEnv),
+			attribute.String("deployment.environment", deployEnv),
 		)),
 	)
 	l.otlController = pusher

@@ -133,8 +133,8 @@ func TestLogCounter(t *testing.T) {
 func TestLogOTLCounter(t *testing.T) {
 	assert := assert.New(t)
 	logger := New("logger-tester")
-	podID := os.Getenv("_POD_ID")
-	if podID == "" {
+	testOtel := os.Getenv("TEST_OTEL")
+	if testOtel == "" {
 		err := logger.SetMetricsOutput(OTLMetrics)
 		assert.ErrorIs(err, ErrOTLConnection)
 		err = logger.Shutdown()
@@ -165,8 +165,8 @@ func TestLogGaugeInt(t *testing.T) {
 func TestLogOTLGaugeInt(t *testing.T) {
 	assert := assert.New(t)
 	logger := New("logger-tester")
-	podID := os.Getenv("_POD_ID")
-	if podID == "" {
+	testOtel := os.Getenv("TEST_OTEL")
+	if testOtel == "" {
 		err := logger.SetMetricsOutput(OTLMetrics)
 		assert.ErrorIs(err, ErrOTLConnection)
 		err = logger.Shutdown()
@@ -197,8 +197,8 @@ func TestLogGaugeFloat(t *testing.T) {
 func TestLogOTLGaugeFloat(t *testing.T) {
 	assert := assert.New(t)
 	logger := New("logger-tester")
-	podID := os.Getenv("_POD_ID")
-	if podID == "" {
+	testOTEL := os.Getenv("TEST_OTEL")
+	if testOTEL == "" {
 		err := logger.SetMetricsOutput(OTLMetrics)
 		assert.ErrorIs(err, ErrOTLConnection)
 		err = logger.Shutdown()
