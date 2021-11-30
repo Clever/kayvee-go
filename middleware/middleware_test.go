@@ -107,7 +107,6 @@ func TestMiddleware(t *testing.T) {
 		test.expectedLog["method"] = "GET"
 		test.expectedLog["title"] = "request-finished"
 		test.expectedLog["via"] = "kayvee-middleware"
-		test.expectedLog["params"] = "key=val&key2=val2"
 		test.expectedLog["source"] = "my-source"
 		test.expectedLog["count"] = float64(1)
 		test.expectedLog["deploy_env"] = "testing"
