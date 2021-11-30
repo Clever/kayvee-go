@@ -20,7 +20,6 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 	data := map[string]interface{}{
 		"method": req.Method,
 		"path":   req.URL.Path,
-		"params": req.URL.RawQuery,
 		"ip":     getIP(req),
 	}
 
