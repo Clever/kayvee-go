@@ -6,6 +6,8 @@ import "gopkg.in/Clever/kayvee-go.v6"
 Package kayvee provides methods to output human and machine parseable strings,
 with a "json" format.
 
+This is an added string to test if it'll be based off of an older version.
+
 ## [Logger API Documentation](./logger)
 
 * [gopkg.in/Clever/kayvee-go.v6/logger](https://godoc.org/gopkg.in/Clever/kayvee-go.v6/logger)
