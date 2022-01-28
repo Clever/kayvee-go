@@ -85,13 +85,11 @@ func (fl *routeCountingFormatLogger) formatAndLog(data map[string]interface{}) {
 // setFormatter implements the FormatLogger method.
 func (fl *routeCountingFormatLogger) setFormatter(formatter Formatter) {
 	// we don't format anything in this mock logger
-	return
 }
 
 // setOutput implements the FormatLogger method.
 func (fl *routeCountingFormatLogger) setOutput(output io.Writer) {
 	// we don't output anything in this mock logger
-	return
 }
 
 /////////////////////////////////////////////////////////////
@@ -130,14 +128,24 @@ func (ml *MockRouteCountLogger) SetOutput(output io.Writer) {
 	ml.logger.SetOutput(output)
 }
 
+// SetMetricsOutput implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) SetMetricsOutput(mo MetricsOutput) error {
+	return ml.logger.SetMetricsOutput(mo)
+}
+
 // setFormatLogger implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) setFormatLogger(output formatLogger) {
-	return // Mocks need a custom format logger
+	// Mocks need a custom format logger
 }
 
 // SetRouter implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) SetRouter(router router.Router) {
 	ml.logger.SetRouter(router)
+}
+
+// Shutdown implements the method for the KayveeLogger interface.
+func (ml *MockRouteCountLogger) Shutdown() error {
+	return ml.logger.Shutdown()
 }
 
 // Trace implements the method for the KayveeLogger interface.

@@ -44,6 +44,13 @@ type KayveeLogger interface {
 	// logger will not be touched by the global router.  Mostly used for testing and benchmarking.
 	SetRouter(router router.Router)
 
+	// SetMetricsOutput sets the metrics output to be used
+	SetMetricsOutput(mo MetricsOutput) error
+
+	// Shutdown handles closing all connections and pushes the queued metrics
+	//  - This should be called when using opentelemetry metrics output to ensure all metrics are collected.
+	Shutdown() error
+
 	//
 	// Logging
 	//

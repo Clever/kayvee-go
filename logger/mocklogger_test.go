@@ -66,7 +66,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	t.Log("log1 -- verify rule matches")
 	actualRoutes1 := mockLogger.RuleOutputs()
 	expectedRoutes1 := map[string][]router.RuleOutput{
-		"rule-one": []router.RuleOutput{
+		"rule-one": {
 			router.RuleOutput{
 				"rule": "rule-one",
 				"out":  "#-bar-",
@@ -93,7 +93,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 	t.Log("log2 -- verify rule matches")
 
 	expectedRoutes2 := map[string][]router.RuleOutput{
-		"rule-one": []router.RuleOutput{
+		"rule-one": {
 			router.RuleOutput{
 				"rule": "rule-one",
 				"out":  "#-bar-",
@@ -103,7 +103,7 @@ func TestRouteCountsWithMockLogger(t *testing.T) {
 				"out":  "#-baz-",
 			},
 		},
-		"rule-two": []router.RuleOutput{
+		"rule-two": {
 			router.RuleOutput{
 				"rule": "rule-two",
 				"more": "x",
