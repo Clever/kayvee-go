@@ -128,11 +128,6 @@ func (ml *MockRouteCountLogger) SetOutput(output io.Writer) {
 	ml.logger.SetOutput(output)
 }
 
-// SetMetricsOutput implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) SetMetricsOutput(mo MetricsOutput) error {
-	return ml.logger.SetMetricsOutput(mo)
-}
-
 // setFormatLogger implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) setFormatLogger(output formatLogger) {
 	// Mocks need a custom format logger
@@ -141,11 +136,6 @@ func (ml *MockRouteCountLogger) setFormatLogger(output formatLogger) {
 // SetRouter implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) SetRouter(router router.Router) {
 	ml.logger.SetRouter(router)
-}
-
-// Shutdown implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) Shutdown() error {
-	return ml.logger.Shutdown()
 }
 
 // Trace implements the method for the KayveeLogger interface.
