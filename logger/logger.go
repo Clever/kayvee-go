@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
-var globalOTLExporter *otlpmetric.Exporter
 var globalOTLController *otlController.Controller
 
 func getEnvMaybeWithPrefix(prefix string, key string) string {
@@ -395,7 +394,6 @@ func setupOtlMetrics(hostPort string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create the otel collector exporter: %v", err)
 	}
-	globalOTLExporter = exp
 
 	// get app data
 	var appName, buildID, deployEnv string

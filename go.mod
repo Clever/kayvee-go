@@ -18,3 +18,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.26.0
 	gopkg.in/yaml.v2 v2.2.3
 )
+
+// For logr (indirect dep of otel), it uses strconv.FormatComplex, which 
+replace github.com/go-openapi/validate => github.com/go-openapi/validate v0.0.0-20180703152151-9a6e517cddf1 // pre-modules tag 0.15.0
