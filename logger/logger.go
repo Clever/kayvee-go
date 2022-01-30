@@ -410,8 +410,8 @@ func setupOtlMetrics(hostPort string) error {
 	}
 
 	pusher := otlController.New(
-		otlProcessor.New(
-			simple.NewWithExactDistribution(),
+		otlProcessor.NewFactory(
+			simple.NewWithInexpensiveDistribution(),
 			exp,
 		),
 		otlController.WithExporter(exp),
@@ -423,7 +423,7 @@ func setupOtlMetrics(hostPort string) error {
 		)),
 	)
 	globalOTLController = pusher
-	global.SetMeterProvider(pusher.MeterProvider())
+	global.SetMeterProvider(pusher)
 
 	if err := pusher.Start(ctx); err != nil {
 		return fmt.Errorf("could not start metric controller: %v", err)
