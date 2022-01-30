@@ -25,7 +25,7 @@ jobs:
     - checkout
     - run: make install_deps
     - run: make test
-    - run: make benchmark
+    - run: make benchmarks
     - persist_to_workspace:
         root: ~/go/src/github.com/Clever
         paths: "."
