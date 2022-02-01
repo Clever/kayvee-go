@@ -131,22 +131,13 @@ func TestLogCounter(t *testing.T) {
 }
 
 func TestLogOTLCounter(t *testing.T) {
-	assert := assert.New(t)
-	logger := New("logger-tester")
-	testOtel := os.Getenv("TEST_OTEL")
-	if testOtel == "" {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.ErrorIs(err, ErrOTLConnection)
-		err = logger.Shutdown()
-		assert.Nil(err)
-	} else {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.Nil(err)
-		logger.Counter("testlogcounter")
-		logger.CounterD("testlogcounter", 2, map[string]interface{}{"key1": "val1", "key2": "val2"})
-		err = logger.Shutdown()
-		assert.Nil(err)
+	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
+		return
 	}
+	logger := New("logger-tester").(*Logger)
+	logger.Counter("testlogcounter")
+	logger.CounterD("testlogcounter", 2, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	teardownOTLMetrics()
 }
 
 func TestLogGaugeInt(t *testing.T) {
@@ -163,22 +154,13 @@ func TestLogGaugeInt(t *testing.T) {
 }
 
 func TestLogOTLGaugeInt(t *testing.T) {
-	assert := assert.New(t)
-	logger := New("logger-tester")
-	testOtel := os.Getenv("TEST_OTEL")
-	if testOtel == "" {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.ErrorIs(err, ErrOTLConnection)
-		err = logger.Shutdown()
-		assert.Nil(err)
-	} else {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.Nil(err)
-		logger.GaugeInt("testloggaugeint", 0)
-		logger.GaugeIntD("testloggaugeint", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
-		err = logger.Shutdown()
-		assert.Nil(err)
+	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
+		return
 	}
+	logger := New("logger-tester").(*Logger)
+	logger.GaugeInt("testloggaugeint", 0)
+	logger.GaugeIntD("testloggaugeint", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	teardownOTLMetrics()
 }
 
 func TestLogGaugeFloat(t *testing.T) {
@@ -195,22 +177,13 @@ func TestLogGaugeFloat(t *testing.T) {
 }
 
 func TestLogOTLGaugeFloat(t *testing.T) {
-	assert := assert.New(t)
-	logger := New("logger-tester")
-	testOTEL := os.Getenv("TEST_OTEL")
-	if testOTEL == "" {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.ErrorIs(err, ErrOTLConnection)
-		err = logger.Shutdown()
-		assert.Nil(err)
-	} else {
-		err := logger.SetMetricsOutput(OTLMetrics)
-		assert.Nil(err)
-		logger.GaugeFloat("testloggaugefloat", 0.0)
-		logger.GaugeFloatD("testloggaugefloat", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
-		err = logger.Shutdown()
-		assert.Nil(err)
+	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
+		return
 	}
+	logger := New("logger-tester").(*Logger)
+	logger.GaugeFloat("testloggaugefloat", 0.0)
+	logger.GaugeFloatD("testloggaugefloat", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	teardownOTLMetrics()
 }
 
 func TestDiffOutput(t *testing.T) {

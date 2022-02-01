@@ -6,9 +6,12 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/url"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	kv "github.com/Clever/kayvee-go/v7"
@@ -23,6 +26,30 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
+
+var globalOTLController *otlController.Controller
+
+func getEnvMaybeWithPrefix(prefix string, key string) string {
+	if val, ok := os.LookupEnv(prefix + key); ok {
+		return val
+	}
+	return os.Getenv(key)
+}
+
+func init() {
+	if otelCollectorURL := getEnvMaybeWithPrefix("_", "OTEL_COLLECTOR_URL"); otelCollectorURL != "" {
+		up, err := url.Parse(otelCollectorURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to parse otel collector url '%s': %v\n", otelCollectorURL, err)
+		} else if up.Scheme != "tcp" {
+			fmt.Fprintf(os.Stderr, "otel collector url '%s' is %s, not tcp\n", otelCollectorURL, up.Scheme)
+		} else {
+			if err := setupOtlMetrics(up.Host); err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+			}
+		}
+	}
+}
 
 /////////////////////
 //
@@ -76,17 +103,14 @@ func (l LogLevel) String() string {
 	return ""
 }
 
-// MetricsOutput is an enum is used to denote the output of metrics
-type MetricsOutput int
+// metricsOutput is an enum is used to denote the output of metrics
+type metricsOutput int
 
 // Constants used to define different MetricsOutput supported
 const (
-	LogMetrics MetricsOutput = iota
-	OTLMetrics
+	logMetrics metricsOutput = iota
+	otlMetrics
 )
-
-// ErrOTLConnection error returned when no collector is running
-var ErrOTLConnection = fmt.Errorf("cannot connect to opentelemetry collector")
 
 /////////////////////////////
 //
@@ -102,9 +126,7 @@ type Logger struct {
 	logLvl        LogLevel
 	fLogger       formatLogger
 	logRouter     router.Router
-	metricsOutput MetricsOutput
-	otlExporter   *otlpmetric.Exporter
-	otlController *otlController.Controller
+	metricsOutput metricsOutput
 }
 
 var globalRouter router.Router
@@ -183,19 +205,6 @@ func (l *Logger) SetFormatter(formatter Formatter) {
 // SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.fLogger.setOutput(output)
-}
-
-// SetMetricsOutput implements the method for the KayveeLogger interface.
-func (l *Logger) SetMetricsOutput(mo MetricsOutput) error {
-	if mo < 0 || mo > 1 {
-		return fmt.Errorf("non valid metric output passed")
-	}
-	l.metricsOutput = mo
-	if mo == OTLMetrics {
-		return l.setupOtlMetrics()
-	}
-
-	return nil
 }
 
 func (l *Logger) setFormatLogger(fl formatLogger) {
@@ -289,7 +298,7 @@ func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 // CounterD implements the method for the KayveeLogger interface.
 // Logs with type = up/down counter, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
-	if l.metricsOutput == OTLMetrics {
+	if l.metricsOutput == otlMetrics {
 		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
 		l.globalsL.RUnlock()
@@ -319,7 +328,7 @@ func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interf
 }
 
 func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
-	if l.metricsOutput == OTLMetrics {
+	if l.metricsOutput == otlMetrics {
 		ctx := context.Background()
 		l.globalsL.RLock()
 		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
@@ -366,18 +375,14 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	l.fLogger.formatAndLog(data)
 }
 
-// setupOtlMetrics sets up the opentelemetry metrics exporter
-func (l *Logger) setupOtlMetrics() error {
-	if l.metricsOutput != OTLMetrics {
-		return fmt.Errorf("metrics output is not OTLMetrics")
-	}
-
-	// check if we can open a connection to the collector
-	conn, err := net.Dial("tcp", "localhost:4317")
+// setupOtlMetrics sets up the opentelemetry metrics exporter.
+// It takes in the host:port to connect to via TCP.
+func setupOtlMetrics(hostPort string) error {
+	conn, err := net.Dial("tcp", hostPort)
 	if err == nil {
 		conn.Close()
 	} else {
-		return ErrOTLConnection
+		return fmt.Errorf("cannot connect to opentelemetry collector at %s: %s", hostPort, err)
 	}
 
 	ctx := context.Background()
@@ -389,7 +394,6 @@ func (l *Logger) setupOtlMetrics() error {
 	if err != nil {
 		return fmt.Errorf("failed to create the otel collector exporter: %v", err)
 	}
-	l.otlExporter = exp
 
 	// get app data
 	var appName, buildID, deployEnv string
@@ -404,8 +408,8 @@ func (l *Logger) setupOtlMetrics() error {
 	}
 
 	pusher := otlController.New(
-		otlProcessor.New(
-			simple.NewWithExactDistribution(),
+		otlProcessor.NewFactory(
+			simple.NewWithInexpensiveDistribution(),
 			exp,
 		),
 		otlController.WithExporter(exp),
@@ -416,29 +420,27 @@ func (l *Logger) setupOtlMetrics() error {
 			attribute.String("deployment.environment", deployEnv),
 		)),
 	)
-	l.otlController = pusher
-	global.SetMeterProvider(pusher.MeterProvider())
+	globalOTLController = pusher
+	global.SetMeterProvider(pusher)
 
 	if err := pusher.Start(ctx); err != nil {
 		return fmt.Errorf("could not start metric controller: %v", err)
 	}
-
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Signal(syscall.SIGTERM))
+	go func() {
+		for range c {
+			teardownOTLMetrics()
+		}
+	}()
 	return nil
 }
 
-// Shutdown implements the method for the KayveeLogger interface.
-func (l *Logger) Shutdown() error {
-	if l.metricsOutput == OTLMetrics && l.otlController != nil {
-		ctx := context.Background()
-
-		// shutdown the controller
-		// this pushes any queued exports to the receiver
-		err := l.otlController.Stop(ctx)
-		if err != nil {
-			return err
-		}
+// teardownOTLMetrics handles closing all connections and pushes the queued metrics
+func teardownOTLMetrics() error {
+	if globalOTLController != nil {
+		return globalOTLController.Stop(context.Background())
 	}
-
 	return nil
 }
 
@@ -489,6 +491,12 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 	}
 	logObj := Logger{
 		globals: ctx,
+	}
+
+	if globalOTLController != nil {
+		logObj.metricsOutput = otlMetrics
+	} else {
+		logObj.metricsOutput = logMetrics
 	}
 
 	fl := defaultFormatLogger{}

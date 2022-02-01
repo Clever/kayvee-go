@@ -23,7 +23,9 @@ while true ; do
 done
 
 # run tests
-OTEL_TEST=test go test -count=1 -v -run TestLogOTL ./logger
+OTEL_TEST=test OTEL_COLLECTOR_URL=tcp://localhost:4317 go test -count=1 -v -run TestLogOTLCounter ./logger
+OTEL_TEST=test OTEL_COLLECTOR_URL=tcp://localhost:4317 go test -count=1 -v -run TestLogOTLGaugeInt ./logger
+OTEL_TEST=test OTEL_COLLECTOR_URL=tcp://localhost:4317 go test -count=1 -v -run TestLogOTLGaugeFloat ./logger
 if [ $? -ne 0 ]; then
     echo "Go tests failed..."
 fi
