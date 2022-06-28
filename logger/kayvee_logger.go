@@ -97,10 +97,10 @@ type KayveeLogger interface {
 	InfoD(title string, data map[string]interface{})
 
 	// Timer takes a string and logs with LogLevel = Debug
-	Timer(tittle string) *Timer
+	Timer(title string) *Timer
 
 	// TimerD takes a string and data map. It logs with LogLevel = Debug
-	TimerD(tittle string, data map[string]interface{}) *Timer
+	TimerD(title string, data map[string]interface{}) *Timer
 
 	// Warn takes a string and logs with LogLevel = Warning
 	Warn(title string)
