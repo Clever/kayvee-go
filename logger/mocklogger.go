@@ -183,6 +183,12 @@ func (ml *MockRouteCountLogger) GaugeFloat(title string, value float64) {
 	ml.logger.GaugeFloat(title, value)
 }
 
+// Timer implements the method for the KayveeLogger interface.
+// Returns Timer structure with .Stop method
+func (ml *MockRouteCountLogger) Timer(title string) *Timer {
+	return ml.logger.Timer(title)
+}
+
 // TraceD implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) TraceD(title string, data map[string]interface{}) {
 	ml.logger.TraceD(title, data)
@@ -227,4 +233,10 @@ func (ml *MockRouteCountLogger) GaugeIntD(title string, value int, data map[stri
 // Logs with type = gauge, and value = value
 func (ml *MockRouteCountLogger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
 	ml.logger.GaugeFloatD(title, value, data)
+}
+
+// TimerD implements the method for the KayveeLogger interface.
+// Returns Timer structure with .Stop method
+func (ml *MockRouteCountLogger) TimerD(title string, data map[string]interface{}) *Timer {
+	return ml.logger.TimerD(title, data)
 }

@@ -112,6 +112,19 @@ const (
 	otlMetrics
 )
 
+// Timer is a helper structure used in logger.Timer method
+type Timer struct {
+	Logger    *Logger
+	StartedAt time.Time
+	Title     string
+}
+
+// Stop is a helper function used in logger.Timer method
+func (t *Timer) Stop() {
+	elapsedTimeSeconds := time.Now().Sub(t.StartedAt).Seconds()
+	t.Logger.DebugD(t.Title+"-end", M{"elapsedTimeSeconds": elapsedTimeSeconds})
+}
+
 /////////////////////////////
 //
 //	Logger
@@ -325,6 +338,19 @@ func (l *Logger) GaugeIntD(title string, value int, data map[string]interface{})
 // Logs with type = gauge, and value = value
 func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
 	l.gauge(title, value, data)
+}
+
+// Timer implements the method for the KayveeLogger interface.
+// Returns Timer structure with .Stop method
+func (l *Logger) Timer(title string) *Timer {
+	return l.TimerD(title, M{})
+}
+
+// TimerD implements the method for the KayveeLogger interface.
+// Returns Timer structure with .Stop method
+func (l *Logger) TimerD(title string, data map[string]interface{}) *Timer {
+	l.DebugD(title+"-start", data)
+	return &Timer{Logger: l, StartedAt: time.Now(), Title: title}
 }
 
 func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {

@@ -96,6 +96,12 @@ type KayveeLogger interface {
 	// InfoD takes a string and data map. It logs with LogLevel = Info
 	InfoD(title string, data map[string]interface{})
 
+	// Timer takes a string and logs with LogLevel = Debug
+	Timer(title string) *Timer
+
+	// TimerD takes a string and data map. It logs with LogLevel = Debug
+	TimerD(title string, data map[string]interface{}) *Timer
+
 	// Warn takes a string and logs with LogLevel = Warning
 	Warn(title string)
 
