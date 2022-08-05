@@ -26,7 +26,12 @@ type WagClientLogger struct {
 }
 
 func (w WagClientLogger) Log(level LogLevel, message string, m map[string]interface{}) {
-	m["message"] = message
+	if message != "" {
+		m["message"] = message
+	}
+	if kv == nil {
+		NewLogger(message, FromEnv)
+	}
 	switch level {
 	case Critical:
 		kv.CriticalD(w.id, m)
@@ -63,7 +68,7 @@ var logLevelNames = map[LogLevel]string{
 	Warning:  "warning",
 	Error:    "error",
 	Critical: "critical",
-	FromEnv:  "from environment vars",
+	FromEnv:  "will pull environment var",
 }
 
 func (l LogLevel) String() string {
