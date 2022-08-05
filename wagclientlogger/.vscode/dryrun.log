@@ -1,6 +1,0 @@
-make --dry-run --always-make --keep-going --print-directory
-make: Entering directory `/Users/chris.martin/go/src/github.com/Clever/kayvee-go/wagclientlogger'
-make: Leaving directory `/Users/chris.martin/go/src/github.com/Clever/kayvee-go/wagclientlogger'
- 
-make: *** No targets specified and no makefile found.  Stop.
-
