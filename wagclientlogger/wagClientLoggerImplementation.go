@@ -2,16 +2,17 @@ package wagclientlogger
 
 import (
 	"github.com/Clever/kayvee-go/v7/logger"
+	wcl "github.com/Clever/wag/wagclientlogger"
 )
 
 var kv logger.KayveeLogger
 
 //NewLogger creates a logger for id that produces logs at and below the indicated level.
 //Level indicated the level at and below which logs are created.
-func NewLogger(id string, level LogLevel) WagClientLogger {
+func NewLogger(id string, level wcl.LogLevel) WagClientLogger {
 	newLogger := logger.New(id)
 
-	if level != FromEnv {
+	if level != wcl.FromEnv {
 		newLogger.SetLogLevel(logger.LogLevel(level))
 	}
 
@@ -21,77 +22,29 @@ func NewLogger(id string, level LogLevel) WagClientLogger {
 }
 
 type WagClientLogger struct {
-	level LogLevel
+	level wcl.LogLevel
 	id    string
 }
 
-func (w WagClientLogger) Log(level LogLevel, message string, m map[string]interface{}) {
+func (w WagClientLogger) Log(level wcl.LogLevel, message string, m map[string]interface{}) {
 	if message != "" {
 		m["message"] = message
 	}
 	if kv == nil {
-		NewLogger(message, FromEnv)
+		NewLogger(message, wcl.FromEnv)
 	}
 	switch level {
-	case Critical:
+	case wcl.Critical:
 		kv.CriticalD(w.id, m)
-	case Error:
+	case wcl.Error:
 		kv.ErrorD(w.id, m)
-	case Warning:
+	case wcl.Warning:
 		kv.WarnD(w.id, m)
-	case Info:
+	case wcl.Info:
 		kv.InfoD(w.id, m)
-	case Debug:
+	case wcl.Debug:
 		kv.DebugD(w.id, m)
-	case Trace:
+	case wcl.Trace:
 		kv.TraceD(w.id, m)
 	}
-}
-
-type LogLevel int
-
-// Constants used to define different LogLevels supported
-const (
-	Trace LogLevel = iota
-	Debug
-	Info
-	Warning
-	Error
-	Critical
-	FromEnv
-)
-
-var logLevelNames = map[LogLevel]string{
-	Trace:    "trace",
-	Debug:    "debug",
-	Info:     "info",
-	Warning:  "warning",
-	Error:    "error",
-	Critical: "critical",
-	FromEnv:  "will pull environment var",
-}
-
-func (l LogLevel) String() string {
-	if s, ok := logLevelNames[l]; ok {
-		return s
-	}
-	return ""
-}
-
-func strLvlToInt(s string) int {
-	switch s {
-	case "Critical":
-		return 5
-	case "Error":
-		return 4
-	case "Warning":
-		return 3
-	case "Info":
-		return 2
-	case "Debug":
-		return 1
-	case "Trace":
-		return 0
-	}
-	return -1
 }
