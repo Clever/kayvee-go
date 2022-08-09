@@ -26,12 +26,12 @@ type WagClientLogger struct {
 	id    string
 }
 
-func (w WagClientLogger) Log(level wcl.LogLevel, message string, m map[string]interface{}) {
-	if message != "" {
-		m["message"] = message
+func (w WagClientLogger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
+	if title != "" {
+		m["title"] = title
 	}
 	if kv == nil {
-		NewLogger(message, wcl.FromEnv)
+		NewLogger(title, wcl.FromEnv)
 	}
 	switch level {
 	case wcl.Critical:
