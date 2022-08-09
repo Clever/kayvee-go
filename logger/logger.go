@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	otlController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otlProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -318,8 +317,12 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 		// Use a Int64UpDownCounter counter instead of a Int64Counter DataDog chose not to follow the OTEL spec
 		// this causes the first add to not be counted and reported
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3654
-		counter := metric.Must(meter).NewInt64UpDownCounter(title)
-		counter.Add(context.Background(), int64(value), getLabels(data)...)
+		counter, err := meter.AsyncInt64().UpDownCounter(title)
+		if err != nil {
+			data["CounterD-Error"] = err.Error()
+			l.logWithLevel(Error, data)
+		}
+		counter.Observe(context.Background(), int64(value), getLabels(data)...)
 	} else {
 		data["title"] = title
 		data["value"] = value
@@ -361,10 +364,18 @@ func (l *Logger) gauge(title string, value interface{}, data map[string]interfac
 		l.globalsL.RUnlock()
 		switch v := value.(type) {
 		case int:
-			m := metric.Must(meter).NewInt64Histogram(title)
+			m, err := meter.SyncInt64().Histogram(title)
+			if err != nil {
+				data["gauge-error"] = err.Error()
+				l.logWithLevel(Error, data)
+			}
 			m.Record(ctx, int64(v), getLabels(data)...)
 		case float64:
-			m := metric.Must(meter).NewFloat64Histogram(title)
+			m, err := meter.SyncFloat64().Histogram(title)
+			if err != nil {
+				data["gauge-error"] = err.Error()
+				l.logWithLevel(Error, data)
+			}
 			m.Record(ctx, v, getLabels(data)...)
 		}
 	} else {
