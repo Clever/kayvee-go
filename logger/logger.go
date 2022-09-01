@@ -319,7 +319,7 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3654
 		counter, err := meter.AsyncInt64().UpDownCounter(title)
 		if err != nil {
-			data["CounterD-Error"] = err.Error()
+			data["CounterD-error"] = err.Error()
 			l.logWithLevel(Error, data)
 		}
 		counter.Observe(context.Background(), int64(value), getLabels(data)...)
