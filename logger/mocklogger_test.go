@@ -3,7 +3,7 @@ package logger
 import (
 	"testing"
 
-	router "github.com/Clever/kayvee-go/v7/router"
+	router "github.com/Clever/kayvee-go/v8/router"
 	"github.com/stretchr/testify/assert"
 )
 

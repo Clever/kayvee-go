@@ -10,7 +10,7 @@ Here's an example program that outputs a kayvee formatted string:
 
   import(
     "fmt"
-    "github.com/Clever/kayvee-go/v7"
+    "github.com/Clever/kayvee-go/v8"
   )
 
   func main() {

@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/Clever/kayvee-go/v7/router"
+	"github.com/Clever/kayvee-go/v8/router"
 )
 
 // MockRouteCountLogger is a mock implementation of KayveeLogger that counts the router rules

@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	kv "github.com/Clever/kayvee-go/v7"
-	"github.com/Clever/kayvee-go/v7/router"
+	kv "github.com/Clever/kayvee-go/v8"
+	"github.com/Clever/kayvee-go/v8/router"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"

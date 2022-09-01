@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	kv "github.com/Clever/kayvee-go/v7"
-	"github.com/Clever/kayvee-go/v7/logger"
+	kv "github.com/Clever/kayvee-go/v8"
+	"github.com/Clever/kayvee-go/v8/logger"
 	"github.com/stretchr/testify/assert"
 )
 

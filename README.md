@@ -1,6 +1,6 @@
 # kayvee
 ```golang
-import "github.com/Clever/kayvee-go/v7"
+import "github.com/Clever/kayvee-go/v8"
 ```
 
 Package kayvee provides methods to output human and machine parseable strings,
@@ -8,8 +8,8 @@ with a "json" format.
 
 ## [Logger API Documentation](./logger)
 
-* [github.com/Clever/kayvee-go/v7/logger](https://godoc.org/github.com/Clever/kayvee-go/v7/logger)
-* [github.com/Clever/kayvee-go/v7/middleware](https://godoc.org/github.com/Clever/kayvee-go/v7/middleware)
+* [github.com/Clever/kayvee-go/v8/logger](https://godoc.org/github.com/Clever/kayvee-go/v8/logger)
+* [github.com/Clever/kayvee-go/v8/middleware](https://godoc.org/github.com/Clever/kayvee-go/v8/middleware)
 
 ## Examples
 
@@ -23,7 +23,7 @@ import (
     "path"
     "time"
 
-    "github.com/Clever/kayvee-go/v7/logger"
+    "github.com/Clever/kayvee-go/v8/logger"
 )
 
 var log = logger.New("myApp")
@@ -94,7 +94,7 @@ import (
     "testing"
 
     "github.com/stretchr/testify/assert"
-    "github.com/Clever/kayvee-go/v7/logger"
+    "github.com/Clever/kayvee-go/v8/logger"
 )
 
 func init() {

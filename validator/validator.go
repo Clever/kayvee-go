@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Clever/kayvee-go/v7/logger"
+	"github.com/Clever/kayvee-go/v8/logger"
 )
 
 // ValueType represents the valuve type of a Kayvee field, where applicable.

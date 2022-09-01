@@ -1,6 +1,6 @@
 # validator
 --
-    import "github.com/Clever/kayvee-go/v7/validator"
+    import "github.com/Clever/kayvee-go/v8/validator"
 
 
 ## Usage

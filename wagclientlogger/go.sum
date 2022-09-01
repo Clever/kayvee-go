@@ -56,8 +56,8 @@ cloud.google.com/go/storage v1.22.1/go.mod h1:S8N1cAStu7BOeFfE8KAQzmyyLkK8p/vmRq
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Clever/kayvee-go/v7 v7.5.1-0.20220809021637-23b672692293 h1:8J7u7smtHM7o1retIfxRPOcSkQ96BP7RPVNfVZixNIU=
-github.com/Clever/kayvee-go/v7 v7.5.1-0.20220809021637-23b672692293/go.mod h1:S34k1t715DJo489ZmkQMJ6ae6PyvYGvyp8jk+l9vYXo=
+github.com/Clever/kayvee-go/v8 v7.5.1-0.20220809021637-23b672692293 h1:8J7u7smtHM7o1retIfxRPOcSkQ96BP7RPVNfVZixNIU=
+github.com/Clever/kayvee-go/v8 v7.5.1-0.20220809021637-23b672692293/go.mod h1:S34k1t715DJo489ZmkQMJ6ae6PyvYGvyp8jk+l9vYXo=
 github.com/Clever/wag/wagclientlogger v0.0.0-20220808171401-2bae8fe6f65f h1:3ZFUx/KJxkU7LirzoFMYRbctxtoWhK0Xkc+syHwj8DI=
 github.com/Clever/wag/wagclientlogger v0.0.0-20220808171401-2bae8fe6f65f/go.mod h1:Hu4KEuTKMgQXjS9t++IQ+OGdrR2YZV/ntJEOe/EXcQY=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=

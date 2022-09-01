@@ -1,7 +1,7 @@
 package wagclientlogger
 
 import (
-	"github.com/Clever/kayvee-go/v7/logger"
+	"github.com/Clever/kayvee-go/v8/logger"
 	wcl "github.com/Clever/wag/wagclientlogger"
 )
 

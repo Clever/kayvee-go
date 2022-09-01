@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Clever/kayvee-go/v7/logger"
+	"github.com/Clever/kayvee-go/v8/logger"
 )
 
 var globalRollupRouter *RollupRouter

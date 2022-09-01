@@ -6,8 +6,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/Clever/kayvee-go/v7/router"
+	"github.com/Clever/kayvee-go/v8/logger"
+	"github.com/Clever/kayvee-go/v8/router"
 )
 
 type logline struct {
