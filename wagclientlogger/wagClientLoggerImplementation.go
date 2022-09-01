@@ -2,7 +2,7 @@ package wagclientlogger
 
 import (
 	"github.com/Clever/kayvee-go/v8/logger"
-	wcl "github.com/Clever/wag/wagclientlogger"
+	wcl "github.com/Clever/wag/logging/wagclientlogger"
 )
 
 var kv logger.KayveeLogger
