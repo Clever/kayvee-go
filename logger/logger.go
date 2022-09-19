@@ -635,7 +635,7 @@ func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{})
 	l.logWithLevel(LogLevel(level), m)
 }
 
-//NewWagClientLogger is a basic logging method that fulfills the WagClientLogger interface.
+//NewWagClientLogger creates and returns a concrete logger instead of an interface to use with WagClientLogger.
 //This was created because New() returned a KayveeLogger instead of a concrete type.
 func (l *Logger) NewWagClientLogger(title string) *Logger {
 	ctx := M{}
