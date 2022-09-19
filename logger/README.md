@@ -1,6 +1,6 @@
 # logger
 --
-    import "github.com/Clever/kayvee-go/v8/logger"
+    import "github.com/Clever/kayvee-go/v7/logger"
 
 
 ## Usage

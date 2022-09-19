@@ -3,7 +3,7 @@ package kinesisstream
 import (
 	"testing"
 
-	"github.com/Clever/kayvee-go/v8/logger"
+	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	gomock "github.com/golang/mock/gomock"

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	kv "github.com/Clever/kayvee-go/v8"
+	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Clever/kayvee-go/v8/logger"
+	"github.com/Clever/kayvee-go/v7/logger"
 )
 
 var defaultHandler = func(req *http.Request) map[string]interface{} {

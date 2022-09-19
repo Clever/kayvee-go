@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Clever/kayvee-go/v8/logger/analytics"
+	"github.com/Clever/kayvee-go/v7/logger/analytics"
 
-	"github.com/Clever/kayvee-go/v8/logger"
+	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"

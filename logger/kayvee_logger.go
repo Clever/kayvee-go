@@ -3,7 +3,7 @@ package logger
 import (
 	"io"
 
-	"github.com/Clever/kayvee-go/v8/router"
+	"github.com/Clever/kayvee-go/v7/router"
 )
 
 /////////////////////////////
