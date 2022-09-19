@@ -637,7 +637,7 @@ func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{})
 
 //NewWagClientLogger creates and returns a concrete logger instead of an interface to use with WagClientLogger.
 //This was created because New() returned a KayveeLogger instead of a concrete type.
-func (l *Logger) NewWagClientLogger(title string) *Logger {
+func NewWagClientLogger(title string) *Logger {
 	ctx := M{}
 	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
 		ctx["team"] = teamName
