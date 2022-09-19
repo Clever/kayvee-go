@@ -16,6 +16,7 @@ import (
 
 	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/Clever/kayvee-go/v7/router"
+	wcl "github.com/Clever/wag/logging/wagclientlogger"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -626,4 +627,10 @@ func getLabels(data map[string]interface{}) []attribute.KeyValue {
 	}
 
 	return attrs
+}
+
+//Log is a basic logging method that fulfills the WagClientLogger interface.
+func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
+	m["title"] = title
+	l.logWithLevel(LogLevel(level), m)
 }
