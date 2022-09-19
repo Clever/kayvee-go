@@ -634,3 +634,64 @@ func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{})
 	m["title"] = title
 	l.logWithLevel(LogLevel(level), m)
 }
+
+//NewWagClientLogger is a basic logging method that fulfills the WagClientLogger interface.
+//This was created because New() returned a KayveeLogger instead of a concrete type.
+func (l *Logger) NewWagClientLogger(title string) *Logger {
+	ctx := M{}
+	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
+		ctx["team"] = teamName
+	} else if teamName := os.Getenv("TEAM_OWNER"); teamName != "" {
+		ctx["team"] = teamName
+	}
+	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
+		ctx["deploy_env"] = v
+	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
+		ctx["deploy_env"] = v
+	}
+	if os.Getenv("_EXECUTION_NAME") != "" {
+		ctx["wf_id"] = os.Getenv("_EXECUTION_NAME")
+	}
+	if os.Getenv("_POD_ID") != "" {
+		ctx["pod-id"] = os.Getenv("_POD_ID")
+	}
+	if os.Getenv("_POD_SHORTNAME") != "" {
+		ctx["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
+	}
+	if os.Getenv("_POD_REGION") != "" {
+		ctx["pod-region"] = os.Getenv("_POD_REGION")
+	}
+	if os.Getenv("_POD_ACCOUNT") != "" {
+		ctx["pod-account"] = os.Getenv("_POD_ACCOUNT")
+	}
+	logObj := Logger{
+		globals: ctx,
+	}
+
+	if globalOTLController != nil {
+		logObj.metricsOutput = otlMetrics
+	} else {
+		logObj.metricsOutput = logMetrics
+	}
+
+	fl := defaultFormatLogger{}
+	logObj.fLogger = &fl
+
+	var logLvl LogLevel
+	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
+	if strLogLvl == "" {
+		logLvl = Trace
+	} else {
+		for key, val := range logLevelNames {
+			if strings.ToLower(strLogLvl) == val {
+				logLvl = key
+				break
+			}
+		}
+	}
+
+	logObj.SetConfig(title, logLvl, kv.Format, os.Stderr)
+
+	return &logObj
+
+}
