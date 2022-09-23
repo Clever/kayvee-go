@@ -16,10 +16,10 @@ import (
 
 	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/Clever/kayvee-go/v7/router"
+	wcl "github.com/Clever/wag/logging/wagclientlogger"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	otlController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otlProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -318,8 +318,12 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 		// Use a Int64UpDownCounter counter instead of a Int64Counter DataDog chose not to follow the OTEL spec
 		// this causes the first add to not be counted and reported
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3654
-		counter := metric.Must(meter).NewInt64UpDownCounter(title)
-		counter.Add(context.Background(), int64(value), getLabels(data)...)
+		counter, err := meter.AsyncInt64().UpDownCounter(title)
+		if err != nil {
+			data["CounterD-error"] = err.Error()
+			l.logWithLevel(Error, data)
+		}
+		counter.Observe(context.Background(), int64(value), getLabels(data)...)
 	} else {
 		data["title"] = title
 		data["value"] = value
@@ -361,10 +365,18 @@ func (l *Logger) gauge(title string, value interface{}, data map[string]interfac
 		l.globalsL.RUnlock()
 		switch v := value.(type) {
 		case int:
-			m := metric.Must(meter).NewInt64Histogram(title)
+			m, err := meter.SyncInt64().Histogram(title)
+			if err != nil {
+				data["gauge-error"] = err.Error()
+				l.logWithLevel(Error, data)
+			}
 			m.Record(ctx, int64(v), getLabels(data)...)
 		case float64:
-			m := metric.Must(meter).NewFloat64Histogram(title)
+			m, err := meter.SyncFloat64().Histogram(title)
+			if err != nil {
+				data["gauge-error"] = err.Error()
+				l.logWithLevel(Error, data)
+			}
 			m.Record(ctx, v, getLabels(data)...)
 		}
 	} else {
@@ -480,70 +492,14 @@ func updateContextMapIfNotReserved(context M, key string, val interface{}) {
 }
 
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+// Deprecated: use NewConcreteLogger instead
 func New(source string) KayveeLogger {
 	return NewWithContext(source, nil)
 }
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func NewWithContext(source string, contextValues map[string]interface{}) KayveeLogger {
-	ctx := M{}
-	for k, v := range contextValues {
-		updateContextMapIfNotReserved(ctx, k, v)
-	}
-	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
-		ctx["team"] = teamName
-	} else if teamName := os.Getenv("TEAM_OWNER"); teamName != "" {
-		ctx["team"] = teamName
-	}
-	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
-		ctx["deploy_env"] = v
-	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
-		ctx["deploy_env"] = v
-	}
-	if os.Getenv("_EXECUTION_NAME") != "" {
-		ctx["wf_id"] = os.Getenv("_EXECUTION_NAME")
-	}
-	if os.Getenv("_POD_ID") != "" {
-		ctx["pod-id"] = os.Getenv("_POD_ID")
-	}
-	if os.Getenv("_POD_SHORTNAME") != "" {
-		ctx["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
-	}
-	if os.Getenv("_POD_REGION") != "" {
-		ctx["pod-region"] = os.Getenv("_POD_REGION")
-	}
-	if os.Getenv("_POD_ACCOUNT") != "" {
-		ctx["pod-account"] = os.Getenv("_POD_ACCOUNT")
-	}
-	logObj := Logger{
-		globals: ctx,
-	}
-
-	if globalOTLController != nil {
-		logObj.metricsOutput = otlMetrics
-	} else {
-		logObj.metricsOutput = logMetrics
-	}
-
-	fl := defaultFormatLogger{}
-	logObj.fLogger = &fl
-
-	var logLvl LogLevel
-	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
-	if strLogLvl == "" {
-		logLvl = Trace
-	} else {
-		for key, val := range logLevelNames {
-			if strings.ToLower(strLogLvl) == val {
-				logLvl = key
-				break
-			}
-		}
-	}
-
-	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
-
-	return &logObj
+	return NewConcreteLoggerWithContext(source, contextValues)
 }
 
 /////////////////////////////
@@ -615,4 +571,78 @@ func getLabels(data map[string]interface{}) []attribute.KeyValue {
 	}
 
 	return attrs
+}
+
+//Log is a basic logging method that fulfills the WagClientLogger interface.
+func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
+	m["title"] = title
+	l.logWithLevel(LogLevel(level), m)
+}
+
+// NewConcreteLogger creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+func NewConcreteLogger(source string) *Logger {
+	return NewConcreteLoggerWithContext(source, nil)
+}
+
+// NewConcreteLoggerWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
+	ctx := M{}
+	for k, v := range contextValues {
+		updateContextMapIfNotReserved(ctx, k, v)
+	}
+	if teamName := os.Getenv("_TEAM_OWNER"); teamName != "" {
+		ctx["team"] = teamName
+	} else if teamName := os.Getenv("TEAM_OWNER"); teamName != "" {
+		ctx["team"] = teamName
+	}
+	if v := os.Getenv("_DEPLOY_ENV"); v != "" {
+		ctx["deploy_env"] = v
+	} else if v := os.Getenv("DEPLOY_ENV"); v != "" {
+		ctx["deploy_env"] = v
+	}
+	if os.Getenv("_EXECUTION_NAME") != "" {
+		ctx["wf_id"] = os.Getenv("_EXECUTION_NAME")
+	}
+	if os.Getenv("_POD_ID") != "" {
+		ctx["pod-id"] = os.Getenv("_POD_ID")
+	}
+	if os.Getenv("_POD_SHORTNAME") != "" {
+		ctx["pod-shortname"] = os.Getenv("_POD_SHORTNAME")
+	}
+	if os.Getenv("_POD_REGION") != "" {
+		ctx["pod-region"] = os.Getenv("_POD_REGION")
+	}
+	if os.Getenv("_POD_ACCOUNT") != "" {
+		ctx["pod-account"] = os.Getenv("_POD_ACCOUNT")
+	}
+	logObj := Logger{
+		globals: ctx,
+	}
+
+	if globalOTLController != nil {
+		logObj.metricsOutput = otlMetrics
+	} else {
+		logObj.metricsOutput = logMetrics
+	}
+
+	fl := defaultFormatLogger{}
+	logObj.fLogger = &fl
+
+	var logLvl LogLevel
+	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
+	if strLogLvl == "" {
+		logLvl = Trace
+	} else {
+		for key, val := range logLevelNames {
+			if strings.ToLower(strLogLvl) == val {
+				logLvl = key
+				break
+			}
+		}
+	}
+
+	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
+
+	return &logObj
+
 }
