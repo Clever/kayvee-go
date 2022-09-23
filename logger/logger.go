@@ -492,6 +492,7 @@ func updateContextMapIfNotReserved(context M, key string, val interface{}) {
 }
 
 // New creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+// Deprecated: use NewConcreteLogger instead
 func New(source string) KayveeLogger {
 	return NewWithContext(source, nil)
 }
@@ -578,9 +579,13 @@ func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{})
 	l.logWithLevel(LogLevel(level), m)
 }
 
-//NewConcreteLogger creates and returns a concrete logger instead of an interface
-//This was created because New() returned a KayveeLogger instead of a concrete type.
-func NewConcreteLogger(source string, contextValues M) *Logger {
+// NewConcreteLogger creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+func NewConcreteLogger(source string) *Logger {
+	return NewConcreteLoggerWithContext(source, nil)
+}
+
+// NewConcreteLoggerWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
+func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 	ctx := M{}
 	for k, v := range contextValues {
 		updateContextMapIfNotReserved(ctx, k, v)
