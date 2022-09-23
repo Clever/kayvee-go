@@ -499,7 +499,7 @@ func New(source string) KayveeLogger {
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
 func NewWithContext(source string, contextValues map[string]interface{}) KayveeLogger {
-	return NewConcreteLogger(source, contextValues)
+	return NewConcreteLoggerWithContext(source, contextValues)
 }
 
 /////////////////////////////
