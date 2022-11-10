@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -220,7 +221,7 @@ func TestSubstitution(t *testing.T) {
 			"channel":    "#-%{foo}-",
 			"dimensions": []string{"-%{foo}-", "-%{bar.baz}-"},
 			"msg": "%{an-int}, %{an-int32}, %{an-int64}, " +
-				"%{a-bool}, %{a-float32}, %{a-float64}, %{a-string}, %{bar}",
+				"%{a-bool}, %{a-float32}, %{a-float64}, %{a-string}, %{an-error}, %{bar}",
 		},
 	}
 	msg := map[string]interface{}{
@@ -233,6 +234,7 @@ func TestSubstitution(t *testing.T) {
 		"a-string":  "hihi",
 		"a-float32": float32(12.3456),
 		"a-float64": float64(120.3456),
+		"an-error":  fmt.Errorf("from-error"),
 		"bar": map[string]interface{}{
 			"baz": "nest egg",
 		},
@@ -241,7 +243,7 @@ func TestSubstitution(t *testing.T) {
 		"rule":       "myrule",
 		"channel":    "#-partner-",
 		"dimensions": []string{"-partner-", "-nest egg-"},
-		"msg":        "100, 132, 164, true, 12.3456, 120.3456, hihi, UNKNOWN_VALUE_TYPE",
+		"msg":        "100, 132, 164, true, 12.3456, 120.3456, hihi, from-error, UNKNOWN_VALUE_TYPE",
 	}
 	actual := r.OutputFor(msg)
 	assert.Equal(t, expected, actual)

@@ -90,6 +90,8 @@ func substituteFields(
 			return fmt.Sprintf("%g", v)
 		case float64:
 			return fmt.Sprintf("%g", v)
+		case error:
+			return v.Error()
 		default:
 			return "UNKNOWN_VALUE_TYPE"
 		}
