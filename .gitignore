@@ -30,3 +30,4 @@ vendor/
 
 # mocks
 **/mock*.go
+.git/
