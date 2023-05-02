@@ -75,6 +75,8 @@ type Config struct {
 	FirehoseAPI firehoseiface.FirehoseAPI
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
 	ErrLogger logger.KayveeLogger
+	// VPCEndpoint determines whether to use the VPC endpoint of firehose. Default: true
+	VPCEndpoint *bool
 }
 
 // New returns a logger that writes to an analytics ark db.
@@ -100,6 +102,10 @@ func New(c Config) (*Logger, error) {
 	} else {
 		al.fhStream = streamName
 	}
+	vpcEndpoint := true
+	if c.VPCEndpoint != nil {
+		vpcEndpoint = *c.VPCEndpoint
+	}
 
 	if v := c.FirehosePutRecordBatchMaxRecords; v != 0 {
 		al.maxBatchRecords = min(v, firehosePutRecordBatchMaxRecords)
@@ -119,15 +125,17 @@ func New(c Config) (*Logger, error) {
 	al.done = make(chan bool)
 
 	if c.FirehoseAPI != nil {
+		al.fhAPI = c.FirehoseAPI
 		// make an effort to override endpoint resolver
-		if f, ok := c.FirehoseAPI.(*firehose.Firehose); ok {
+		if f, ok := c.FirehoseAPI.(*firehose.Firehose); ok && vpcEndpoint {
 			f.Client.Config.EndpointResolver = EndpointResolver
 			al.fhAPI = f
-		} else {
-			al.fhAPI = c.FirehoseAPI
 		}
 	} else if c.Region != "" {
-		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(EndpointResolver)
+		config := aws.NewConfig().WithRegion(c.Region)
+		if vpcEndpoint {
+			config = config.WithEndpointResolver(EndpointResolver)
+		}
 		sess, err := session.NewSession(config)
 		if err != nil {
 			return nil, fmt.Errorf("error creating firehose client: %v", err)
