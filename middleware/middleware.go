@@ -5,7 +5,6 @@ Package middleware provides a customizable Kayvee logging middleware for HTTP se
 		// Add Gorilla mux vars to the log, just because
 		return mux.Vars(req)
 	})
-
 */
 package middleware
 
