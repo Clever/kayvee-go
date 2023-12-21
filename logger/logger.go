@@ -573,7 +573,7 @@ func getLabels(data map[string]interface{}) []attribute.KeyValue {
 	return attrs
 }
 
-//Log is a basic logging method that fulfills the WagClientLogger interface.
+// Log is a basic logging method that fulfills the WagClientLogger interface.
 func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
 	m["title"] = title
 	l.logWithLevel(LogLevel(level), m)
