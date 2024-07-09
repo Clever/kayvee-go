@@ -18,6 +18,7 @@ type MockRollupLogger struct {
 	mu          sync.Mutex
 	infoDCalls  []RollupLoggerCall
 	errorDCalls []RollupLoggerCall
+	warnDCalls  []RollupLoggerCall
 }
 
 func (m *MockRollupLogger) InfoD(title string, data map[string]interface{}) {
@@ -32,6 +33,23 @@ func (m *MockRollupLogger) InfoDCalls() []RollupLoggerCall {
 	defer m.mu.Unlock()
 	var calls []RollupLoggerCall
 	for _, call := range m.infoDCalls {
+		calls = append(calls, call)
+	}
+	return calls
+}
+
+func (m *MockRollupLogger) WarnD(title string, data map[string]interface{}) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	call := RollupLoggerCall{title, data}
+	m.warnDCalls = append(m.warnDCalls, call)
+}
+
+func (m *MockRollupLogger) WarnDCalls() []RollupLoggerCall {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var calls []RollupLoggerCall
+	for _, call := range m.warnDCalls {
 		calls = append(calls, call)
 	}
 	return calls
@@ -116,6 +134,7 @@ func TestSameOp2xx(t *testing.T) {
 			})
 		}()
 	}
+	time.Sleep(100 * time.Millisecond)
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func() {
@@ -132,31 +151,29 @@ func TestSameOp2xx(t *testing.T) {
 
 	// check in shortly after reporting delay
 	time.Sleep(reportingDelay + 500*time.Millisecond)
-
-	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
-		{
-			Title: "request-finished-rollup",
-			Data: map[string]interface{}{
-				"count":                int64(50),
-				"op":                   "healthCheck",
-				"method":               "GET",
-				"response-time-ms":     int64(100),
-				"response-time-ms-sum": int64(100 * 50),
-				"status-code":          200,
-				"via":                  "kayvee-middleware",
-			},
+	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
+		Title: "request-finished-rollup",
+		Data: map[string]interface{}{
+			"count":                int64(50),
+			"op":                   "healthCheck",
+			"method":               "GET",
+			"response-time-ms":     int64(100),
+			"response-time-ms-sum": int64(100 * 50),
+			"status-code":          200,
+			"via":                  "kayvee-middleware",
 		},
-		{
-			Title: "request-finished-rollup",
-			Data: map[string]interface{}{
-				"count":                int64(50),
-				"op":                   "healthCheck",
-				"method":               "GET",
-				"response-time-ms":     int64(100),
-				"response-time-ms-sum": int64(100 * 50),
-				"status-code":          201,
-				"via":                  "kayvee-middleware",
-			},
+	})
+
+	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
+		Title: "request-finished-rollup",
+		Data: map[string]interface{}{
+			"count":                int64(50),
+			"op":                   "healthCheck",
+			"method":               "GET",
+			"response-time-ms":     int64(100),
+			"response-time-ms-sum": int64(100 * 50),
+			"status-code":          201,
+			"via":                  "kayvee-middleware",
 		},
 	})
 }

@@ -15,6 +15,7 @@ var globalRollupRouter *RollupRouter
 // RollupLogger will log info / error rollups depending on status code.
 type RollupLogger interface {
 	InfoD(title string, data map[string]interface{})
+	WarnD(title string, data map[string]interface{})
 	ErrorD(title string, data map[string]interface{})
 }
 
@@ -149,6 +150,8 @@ func (r *logRollup) report() {
 		switch logLevelFromStatus(r.StatusCode) {
 		case logger.Error:
 			r.Logger.ErrorD("request-finished-rollup", r.rollupMsg)
+		case logger.Warning:
+			r.Logger.WarnD("request-finished-rollup", r.rollupMsg)
 		default:
 			r.Logger.InfoD("request-finished-rollup", r.rollupMsg)
 		}
