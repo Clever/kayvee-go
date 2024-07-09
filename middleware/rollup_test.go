@@ -134,7 +134,6 @@ func TestSameOp2xx(t *testing.T) {
 			})
 		}()
 	}
-	time.Sleep(100 * time.Millisecond)
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func() {
