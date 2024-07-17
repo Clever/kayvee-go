@@ -146,5 +146,8 @@ func logLevelFromStatus(status int) logger.LogLevel {
 	if status >= 499 {
 		return logger.Error
 	}
+	if status >= 400 {
+		return logger.Warning
+	}
 	return logger.Info
 }
