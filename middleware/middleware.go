@@ -70,6 +70,8 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch logLevelFromStatus(lrw.status) {
 	case logger.Error:
 		lggr.ErrorD("request-finished", data)
+	case logger.Warning:
+		lggr.WarnD("request-finished", data)
 	default:
 		lggr.InfoD("request-finished", data)
 	}
