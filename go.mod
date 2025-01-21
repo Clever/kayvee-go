@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Clever/wag/logging/wagclientlogger v0.0.0-20220916194010-36f974d66e08
-	github.com/aws/aws-sdk-go v1.44.89
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/stretchr/testify v1.8.0

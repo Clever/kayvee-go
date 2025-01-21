@@ -59,6 +59,16 @@ func TestMiddleware(t *testing.T) {
 		},
 		{
 			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(403)
+			},
+			expectedLog: map[string]interface{}{
+				"level":         "warning",
+				"response-size": 0.0,
+				"status-code":   403.0,
+			},
+		},
+		{
+			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(500)
 			},
 			expectedLog: map[string]interface{}{
