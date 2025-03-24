@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
@@ -130,16 +129,6 @@ func TestLogCounter(t *testing.T) {
 		"logger-tester", kv.Info, "testlogcounter", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "counter", "value": 2}))
 }
 
-func TestLogOTLCounter(t *testing.T) {
-	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
-		return
-	}
-	logger := New("logger-tester").(*Logger)
-	logger.Counter("testlogcounter")
-	logger.CounterD("testlogcounter", 2, map[string]interface{}{"key1": "val1", "key2": "val2"})
-	teardownOTLMetrics()
-}
-
 func TestLogGaugeInt(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
@@ -153,16 +142,6 @@ func TestLogGaugeInt(t *testing.T) {
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4}))
 }
 
-func TestLogOTLGaugeInt(t *testing.T) {
-	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
-		return
-	}
-	logger := New("logger-tester").(*Logger)
-	logger.GaugeInt("testloggaugeint", 0)
-	logger.GaugeIntD("testloggaugeint", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
-	teardownOTLMetrics()
-}
-
 func TestLogGaugeFloat(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
@@ -174,16 +153,6 @@ func TestLogGaugeFloat(t *testing.T) {
 	logger.GaugeFloatD("testloggauge", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
 		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4.0}))
-}
-
-func TestLogOTLGaugeFloat(t *testing.T) {
-	if testOtel := os.Getenv("OTEL_TEST"); testOtel == "" {
-		return
-	}
-	logger := New("logger-tester").(*Logger)
-	logger.GaugeFloat("testloggaugefloat", 0.0)
-	logger.GaugeFloatD("testloggaugefloat", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
-	teardownOTLMetrics()
 }
 
 func TestDiffOutput(t *testing.T) {

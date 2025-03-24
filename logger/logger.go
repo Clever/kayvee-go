@@ -1,55 +1,17 @@
 package logger
 
 import (
-	"context"
-	"fmt"
 	"io"
 	"log"
-	"net"
-	"net/url"
 	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/Clever/kayvee-go/v7/router"
 	wcl "github.com/Clever/wag/logging/wagclientlogger"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric/global"
-	otlController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	otlProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"go.opentelemetry.io/otel/sdk/resource"
 )
-
-var globalOTLController *otlController.Controller
-
-func getEnvMaybeWithPrefix(prefix string, key string) string {
-	if val, ok := os.LookupEnv(prefix + key); ok {
-		return val
-	}
-	return os.Getenv(key)
-}
-
-func init() {
-	if otelCollectorURL := getEnvMaybeWithPrefix("_", "OTEL_COLLECTOR_URL"); otelCollectorURL != "" {
-		up, err := url.Parse(otelCollectorURL)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to parse otel collector url '%s': %v\n", otelCollectorURL, err)
-		} else if up.Scheme != "tcp" {
-			fmt.Fprintf(os.Stderr, "otel collector url '%s' is %s, not tcp\n", otelCollectorURL, up.Scheme)
-		} else {
-			if err := setupOtlMetrics(up.Host); err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-			}
-		}
-	}
-}
 
 /////////////////////
 //
@@ -109,7 +71,6 @@ type metricsOutput int
 // Constants used to define different MetricsOutput supported
 const (
 	logMetrics metricsOutput = iota
-	otlMetrics
 )
 
 // Timer is a helper structure used in logger.Timer method
@@ -311,25 +272,10 @@ func (l *Logger) CriticalD(title string, data map[string]interface{}) {
 // CounterD implements the method for the KayveeLogger interface.
 // Logs with type = up/down counter, and value = value
 func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
-	if l.metricsOutput == otlMetrics {
-		l.globalsL.RLock()
-		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
-		l.globalsL.RUnlock()
-		// Use a Int64UpDownCounter counter instead of a Int64Counter DataDog chose not to follow the OTEL spec
-		// this causes the first add to not be counted and reported
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3654
-		counter, err := meter.AsyncInt64().UpDownCounter(title)
-		if err != nil {
-			data["CounterD-error"] = err.Error()
-			l.logWithLevel(Error, data)
-		}
-		counter.Observe(context.Background(), int64(value), getLabels(data)...)
-	} else {
-		data["title"] = title
-		data["value"] = value
-		data["type"] = "counter"
-		l.logWithLevel(Info, data)
-	}
+	data["title"] = title
+	data["value"] = value
+	data["type"] = "counter"
+	l.logWithLevel(Info, data)
 }
 
 // GaugeIntD implements the method for the KayveeLogger interface.
@@ -358,33 +304,10 @@ func (l *Logger) TimerD(title string, data map[string]interface{}) *Timer {
 }
 
 func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
-	if l.metricsOutput == otlMetrics {
-		ctx := context.Background()
-		l.globalsL.RLock()
-		meter := global.Meter(fmt.Sprintf("%s", l.globals["source"]))
-		l.globalsL.RUnlock()
-		switch v := value.(type) {
-		case int:
-			m, err := meter.SyncInt64().Histogram(title)
-			if err != nil {
-				data["gauge-error"] = err.Error()
-				l.logWithLevel(Error, data)
-			}
-			m.Record(ctx, int64(v), getLabels(data)...)
-		case float64:
-			m, err := meter.SyncFloat64().Histogram(title)
-			if err != nil {
-				data["gauge-error"] = err.Error()
-				l.logWithLevel(Error, data)
-			}
-			m.Record(ctx, v, getLabels(data)...)
-		}
-	} else {
-		data["title"] = title
-		data["value"] = value
-		data["type"] = "gauge"
-		l.logWithLevel(Info, data)
-	}
+	data["title"] = title
+	data["value"] = value
+	data["type"] = "gauge"
+	l.logWithLevel(Info, data)
 }
 
 // Actual logging. Handles whether to output based on log level and
@@ -411,75 +334,6 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 	}
 
 	l.fLogger.formatAndLog(data)
-}
-
-// setupOtlMetrics sets up the opentelemetry metrics exporter.
-// It takes in the host:port to connect to via TCP.
-func setupOtlMetrics(hostPort string) error {
-	conn, err := net.Dial("tcp", hostPort)
-	if err == nil {
-		conn.Close()
-	} else {
-		return fmt.Errorf("cannot connect to opentelemetry collector at %s: %s", hostPort, err)
-	}
-
-	ctx := context.Background()
-	otlClient := otlpmetricgrpc.NewClient(
-		otlpmetricgrpc.WithInsecure(),
-	)
-
-	exp, err := otlpmetric.New(ctx, otlClient)
-	if err != nil {
-		return fmt.Errorf("failed to create the otel collector exporter: %v", err)
-	}
-
-	// get app data
-	var appName, buildID, deployEnv string
-	if os.Getenv("_POD_ID") != "" {
-		appName = os.Getenv("_APP_NAME")
-		buildID = os.Getenv("_BUILD_ID")
-		deployEnv = os.Getenv("_DEPLOY_ENV")
-	} else if os.Getenv("POD_ID") != "" {
-		appName = os.Getenv("APP_NAME")
-		buildID = os.Getenv("BUILD_ID")
-		deployEnv = os.Getenv("DEPLOY_ENV")
-	}
-
-	pusher := otlController.New(
-		otlProcessor.NewFactory(
-			simple.NewWithInexpensiveDistribution(),
-			exp,
-		),
-		otlController.WithExporter(exp),
-		otlController.WithCollectPeriod(2*time.Second),
-		otlController.WithResource(resource.NewSchemaless(
-			attribute.String("service.name", appName),
-			attribute.String("service.version", buildID),
-			attribute.String("deployment.environment", deployEnv),
-		)),
-	)
-	globalOTLController = pusher
-	global.SetMeterProvider(pusher)
-
-	if err := pusher.Start(ctx); err != nil {
-		return fmt.Errorf("could not start metric controller: %v", err)
-	}
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Signal(syscall.SIGTERM))
-	go func() {
-		for range c {
-			teardownOTLMetrics()
-		}
-	}()
-	return nil
-}
-
-// teardownOTLMetrics handles closing all connections and pushes the queued metrics
-func teardownOTLMetrics() error {
-	if globalOTLController != nil {
-		return globalOTLController.Stop(context.Background())
-	}
-	return nil
 }
 
 // updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.
@@ -545,34 +399,6 @@ func (fl *defaultFormatLogger) setOutput(output io.Writer) {
 	fl.logWriter = log.New(output, "", 0) // No prefixes
 }
 
-// getLabels takes a M{} and returns an array of opentelemetry []attribute.KeyValue
-func getLabels(data map[string]interface{}) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{}
-
-	for k, v := range data {
-		switch v := v.(type) {
-		case int:
-			attrs = append(attrs, attribute.Int(k, v))
-		case int32:
-			attrs = append(attrs, attribute.Int64(k, int64(v)))
-		case int64:
-			attrs = append(attrs, attribute.Int64(k, v))
-		case float32:
-			attrs = append(attrs, attribute.Float64(k, float64(v)))
-		case float64:
-			attrs = append(attrs, attribute.Float64(k, v))
-		case string:
-			attrs = append(attrs, attribute.String(k, v))
-		case bool:
-			attrs = append(attrs, attribute.Bool(k, v))
-		default:
-			attrs = append(attrs, attribute.String(k, fmt.Sprintf("%+v", v)))
-		}
-	}
-
-	return attrs
-}
-
 // Log is a basic logging method that fulfills the WagClientLogger interface.
 func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
 	m["title"] = title
@@ -619,11 +445,7 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 		globals: ctx,
 	}
 
-	if globalOTLController != nil {
-		logObj.metricsOutput = otlMetrics
-	} else {
-		logObj.metricsOutput = logMetrics
-	}
+	logObj.metricsOutput = logMetrics
 
 	fl := defaultFormatLogger{}
 	logObj.fLogger = &fl
