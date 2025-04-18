@@ -5,7 +5,7 @@ include golang.mk
 SHELL := /bin/bash
 export PATH := $(PWD)/bin:$(PATH)
 PKGS = $(shell go list ./... | grep -v /vendor | grep -v /tools)
-$(eval $(call golang-version-check,1.13))
+$(eval $(call golang-version-check,1.24))
 
 export _DEPLOY_ENV=testing
 export _EXECUTION_NAME=abc123
