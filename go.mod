@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	github.com/Clever/wag/logging/wagclientlogger v0.0.0-20220916194010-36f974d66e08
-	github.com/aws/aws-sdk-go v1.55.6
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.0
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.37.4
