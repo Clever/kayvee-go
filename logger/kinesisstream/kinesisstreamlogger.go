@@ -25,6 +25,8 @@ type KinesisClient interface {
 	PutRecords(ctx context.Context, params *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error)
 }
 
+//go:generate mockgen -package kinesisstream -destination mock_kinesis.go -source kinesisstreamlogger.go KinesisClient
+
 // Logger writes to Kinesis.
 type Logger struct {
 	logger.KayveeLogger
