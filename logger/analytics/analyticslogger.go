@@ -152,7 +152,6 @@ func New(c Config) (*Logger, error) {
 			}
 		}
 	}()
-
 	return al, nil
 }
 
