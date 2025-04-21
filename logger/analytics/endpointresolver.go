@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/endpoints"
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 // reNotGoodEnvVarChars is a negated character set of characters that are good
@@ -17,23 +17,24 @@ func toEnvVar(s string) string {
 	return strings.ToUpper(reNotGoodEnvVarChars.ReplaceAllString(s, "_"))
 }
 
-// environmentVariableEndpointResolver implements endpoints.ResolverFunc by
+// environmentVariableEndpointResolver implements aws.EndpointResolverWithOptions by
 // reading an environment variable corresponding to the service and region.
-// This is how aws-sdk-go supports custom endpoints:
-// https://docs.aws.amazon.com/sdk-for-go/api/aws/endpoints/
-func environmentVariableEndpointResolver(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+func environmentVariableEndpointResolver(service, region string, options ...interface{}) (aws.Endpoint, error) {
 	// e.g., AWS_S3_US_WEST_1_ENDPOINT
 	envVar := fmt.Sprintf("AWS_%s_%s_ENDPOINT", toEnvVar(service), toEnvVar(region))
 	if e := os.Getenv(envVar); e != "" {
-		return endpoints.ResolvedEndpoint{
+		return aws.Endpoint{
 			URL: e,
 		}, nil
 	}
 
-	return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+	// Return default endpoint if no custom endpoint is set
+	return aws.Endpoint{
+		URL: fmt.Sprintf("https://%s.%s.amazonaws.com", service, region),
+	}, nil
 }
 
 // EndpointResolver is used to override the endpoints that AWS clients use. In
 // particular for reducing networking costs for cross-region traffic, we sometimes
 // use a VPC endpoint rather than going through the public internet and a NAT Gateway
-var EndpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
+var EndpointResolver aws.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(environmentVariableEndpointResolver)

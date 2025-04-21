@@ -1,11 +1,13 @@
 package analytics
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -13,7 +15,7 @@ func TestLogger(t *testing.T) {
 	tests := []struct {
 		name             string
 		alc              Config
-		mockExpectations func(mf *MockFirehoseAPI)
+		mockExpectations func(mf *MockFirehoseClient)
 		ops              func(l logger.KayveeLogger)
 	}{
 		{
@@ -22,14 +24,14 @@ func TestLogger(t *testing.T) {
 				Environment: "testenv",
 				DBName:      "testdb",
 			},
-			mockExpectations: func(mf *MockFirehoseAPI) {
-				mf.EXPECT().PutRecordBatch(&firehose.PutRecordBatchInput{
+			mockExpectations: func(mf *MockFirehoseClient) {
+				mf.EXPECT().PutRecordBatch(context.Background(), &firehose.PutRecordBatchInput{
 					DeliveryStreamName: aws.String("testenv--testdb"),
-					Records: []*firehose.Record{
+					Records: []types.Record{
 						{Data: []byte(`{"foo":"bar"}
 `)},
 					},
-				}).Return(&firehose.PutRecordBatchOutput{FailedPutCount: aws.Int64(0)}, nil)
+				}).Return(&firehose.PutRecordBatchOutput{FailedPutCount: aws.Int32(0)}, nil)
 			},
 			ops: func(l logger.KayveeLogger) {
 				l.InfoD("test-title", logger.M{"foo": "bar"})
@@ -40,7 +42,7 @@ func TestLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := gomock.NewController(t)
 			defer c.Finish()
-			mf := NewMockFirehoseAPI(c)
+			mf := NewMockFirehoseClient(c)
 			if tt.mockExpectations != nil {
 				tt.mockExpectations(mf)
 			}
