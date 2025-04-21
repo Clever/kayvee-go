@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -13,7 +14,7 @@ func TestLogger(t *testing.T) {
 	tests := []struct {
 		name             string
 		klc              Config
-		mockExpectations func(mk *MockKinesisAPI)
+		mockExpectations func(mk *MockKinesisClient)
 		ops              func(l logger.KayveeLogger)
 	}{
 		{
@@ -22,17 +23,16 @@ func TestLogger(t *testing.T) {
 				Environment: "testenv",
 				DBName:      "testdb",
 			},
-			mockExpectations: func(mk *MockKinesisAPI) {
-				mk.EXPECT().PutRecords(&kinesis.PutRecordsInput{
+			mockExpectations: func(mk *MockKinesisClient) {
+				mk.EXPECT().PutRecords(gomock.Any(), &kinesis.PutRecordsInput{
 					StreamName: aws.String("testenv--testdb"),
-					Records: []*kinesis.PutRecordsRequestEntry{
+					Records: []types.PutRecordsRequestEntry{
 						{
-							Data: []byte(`{"foo":"bar"}
-`),
+							Data:         []byte(`{"foo":"bar"}` + "\n"),
 							PartitionKey: aws.String("1"),
 						},
 					},
-				}).Return(&kinesis.PutRecordsOutput{FailedRecordCount: aws.Int64(0)}, nil)
+				}).Return(&kinesis.PutRecordsOutput{FailedRecordCount: aws.Int32(0)}, nil)
 			},
 			ops: func(l logger.KayveeLogger) {
 				l.InfoD("test-title", logger.M{"foo": "bar", "partition_key": "1"})
@@ -43,11 +43,11 @@ func TestLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := gomock.NewController(t)
 			defer c.Finish()
-			mk := NewMockKinesisAPI(c)
+			mk := NewMockKinesisClient(c)
 			if tt.mockExpectations != nil {
 				tt.mockExpectations(mk)
 			}
-			tt.klc.KinesisAPI = mk
+			tt.klc.KinesisClient = mk
 			kl, err := New(tt.klc)
 			if err != nil {
 				t.Fatal(err)
