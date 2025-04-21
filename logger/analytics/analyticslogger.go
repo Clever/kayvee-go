@@ -24,6 +24,8 @@ type FirehoseClient interface {
 	PutRecordBatch(ctx context.Context, params *firehose.PutRecordBatchInput, optFns ...func(*firehose.Options)) (*firehose.PutRecordBatchOutput, error)
 }
 
+//go:generate mockgen -package analytics -destination mock_firehose.go -source analyticslogger.go FirehoseClient
+
 // Logger writes to Firehose.
 type Logger struct {
 	logger.KayveeLogger
