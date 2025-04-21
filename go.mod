@@ -1,6 +1,6 @@
 module github.com/Clever/kayvee-go/v7
 
-go 1.21
+go 1.24
 
 require (
 	github.com/Clever/wag/logging/wagclientlogger v0.0.0-20220916194010-36f974d66e08
@@ -29,3 +29,5 @@ require (
 
 // For logr (indirect dep of otel), it uses strconv.FormatComplex, which
 replace github.com/go-openapi/validate => github.com/go-openapi/validate v0.0.0-20180703152151-9a6e517cddf1 // pre-modules tag 0.15.0
+
+tool github.com/golang/mock/mockgen
