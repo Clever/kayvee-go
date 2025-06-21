@@ -2,8 +2,8 @@ package benchmarks
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/Clever/kayvee-go/v7/logger"
@@ -25,17 +25,11 @@ var pathoRouting logger.KayveeLogger
 var realRouting logger.KayveeLogger
 
 func loadJSON(path string, o interface{}) error {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(file, o)
-}
-
-type noopWriter struct{}
-
-func (n *noopWriter) Write(p []byte) (int, error) {
-	return len(p), nil
 }
 
 func init() {
@@ -79,13 +73,14 @@ func init() {
 	}
 	realRouting.SetRouter(realRouter)
 
-	output := &noopWriter{}
-	formatter := func(noop map[string]interface{}) string { return "" }
+	noRouting.SetLogLevel(logger.Debug)
+	basicRouting.SetLogLevel(logger.Debug)
+	pathoRouting.SetLogLevel(logger.Debug)
+	realRouting.SetLogLevel(logger.Debug)
 
-	noRouting.SetConfig("perf", logger.Debug, formatter, output)
-	basicRouting.SetConfig("perf", logger.Debug, formatter, output)
-	pathoRouting.SetConfig("perf", logger.Debug, formatter, output)
-	realRouting.SetConfig("perf", logger.Debug, formatter, output)
+	// close the stderr file to avoid printing logs to the console
+	// during benchmarks
+	os.Stderr.Close()
 }
 
 // No routing

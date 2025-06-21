@@ -25,6 +25,7 @@ _testmain.go
 
 benchmarks/data/*.json
 benchmarks/data/*.yml
+new-benchmarks.txt
 bin/
 vendor/
 

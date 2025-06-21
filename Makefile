@@ -1,11 +1,8 @@
-include golang.mk
 .DEFAULT_GOAL := test # override default goal set in library makefile
 
-.PHONY: test benchmark-data clean bump-major bump-minor bump-patch tag-version $(PKGS)
+.PHONY: test benchmark-data clean bump-major bump-minor bump-patch tag-version
 SHELL := /bin/bash
 export PATH := $(PWD)/bin:$(PATH)
-PKGS = $(shell go list ./... | grep -v /vendor | grep -v /tools)
-$(eval $(call golang-version-check,1.24))
 
 export _DEPLOY_ENV=testing
 export _EXECUTION_NAME=abc123
@@ -43,7 +40,9 @@ tag-version:
 generate:
 	go generate ./...
 
-test: generate tests.json benchmark-data $(PKGS)
+test: generate tests.json benchmark-data
+	golangci-lint run
+	go test -race ./...
 
 clean:
 	rm ./benchmarks/data/*.json ./benchmarks/data/*.yml
@@ -59,12 +58,9 @@ benchmark-data:
 
 
 benchmarks: benchmark-data
-	@go test -v -bench=./benchmarks
-
-$(PKGS): golang-test-all-strict-deps
-	@go get -d -t $@
-	@go generate
-	$(call golang-test-all-strict,$@)
+	@go test -bench=. -benchmem -count=5 ./benchmarks > new-benchmarks.txt
+	@echo "Benchmarks written to new-benchmarks.txt"
+#	benchstat benchmarks.txt new-benchmarks.txt
 
 tests.json:
 	cp tests.json test/tests.json
@@ -74,4 +70,4 @@ test-local-otel:
 
 install_deps:
 	go mod vendor
-	go build -o bin/mockgen github.com/golang/mock/mockgen
+	go install tool
