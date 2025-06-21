@@ -32,7 +32,7 @@ type RollupRouter struct {
 	ctxDone        bool
 
 	// create a rollup object per unique (status-code, op) pair
-	rollupsMu sync.Mutex
+	rollupsMu sync.RWMutex
 	rollups   map[string]*logRollup
 }
 
@@ -47,13 +47,11 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 		ctxDone:        false,
 	}
 	go func() {
-		select {
-		case <-ctx.Done():
-			l.rollupsMu.Lock()
-			l.rollups = map[string]*logRollup{}
-			l.ctxDone = true
-			l.rollupsMu.Unlock()
-		}
+		<-ctx.Done()
+		l.rollupsMu.Lock()
+		l.rollups = map[string]*logRollup{}
+		l.ctxDone = true
+		l.rollupsMu.Unlock()
 	}()
 	return l
 }
@@ -108,12 +106,16 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 }
 
 func (r *RollupRouter) findOrCreate(statusCode int, op, method string) *logRollup {
-	r.rollupsMu.Lock()
-	defer r.rollupsMu.Unlock()
 	rollupKey := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
+
+	r.rollupsMu.RLock()
 	if rollup, ok := r.rollups[rollupKey]; ok {
+		r.rollupsMu.RUnlock()
 		return rollup
 	}
+	r.rollupsMu.RUnlock()
+
+	r.rollupsMu.Lock()
 	rollup := &logRollup{
 		Logger:           r.logger,
 		ReportingDelayNs: (r.reportingDelay).Nanoseconds(),
@@ -122,6 +124,8 @@ func (r *RollupRouter) findOrCreate(statusCode int, op, method string) *logRollu
 		HTTPMethod:       method,
 	}
 	r.rollups[rollupKey] = rollup
+	r.rollupsMu.Unlock()
+
 	go rollup.schedule(r.ctx)
 	return rollup
 }
@@ -136,6 +140,7 @@ type logRollup struct {
 
 	rollupMu                sync.Mutex
 	rollupMsg               map[string]interface{}
+	count                   int64
 	rollupResponseTimeNsSum int64
 }
 
@@ -143,9 +148,11 @@ func (r *logRollup) report() {
 	r.rollupMu.Lock()
 	defer r.rollupMu.Unlock()
 	if r.rollupMsg != nil {
-		sum := r.rollupResponseTimeNsSum / int64(time.Millisecond)
+		count := atomic.LoadInt64(&r.count)
+		sum := atomic.LoadInt64(&r.rollupResponseTimeNsSum) / int64(time.Millisecond)
+		r.rollupMsg["count"] = count
 		r.rollupMsg["response-time-ms-sum"] = sum
-		r.rollupMsg["response-time-ms"] = sum / r.rollupMsg["count"].(int64)
+		r.rollupMsg["response-time-ms"] = sum / count
 
 		switch logLevelFromStatus(r.StatusCode) {
 		case logger.Error:
@@ -156,7 +163,8 @@ func (r *logRollup) report() {
 			r.Logger.InfoD("request-finished-rollup", r.rollupMsg)
 		}
 		r.rollupMsg = nil
-		r.rollupResponseTimeNsSum = 0
+		atomic.StoreInt64(&r.count, 0)
+		atomic.StoreInt64(&r.rollupResponseTimeNsSum, 0)
 	}
 }
 
@@ -181,20 +189,18 @@ func (r *logRollup) schedule(ctx context.Context) {
 	}
 }
 
-func (r *logRollup) add(logmsg map[string]interface{}) {
+func (r *logRollup) add(logmsg map[string]any) {
+	atomic.AddInt64(&r.count, 1)
+	atomic.AddInt64(&r.rollupResponseTimeNsSum, logmsg["response-time"].(time.Duration).Nanoseconds())
+
 	r.rollupMu.Lock()
 	defer r.rollupMu.Unlock()
-
 	if r.rollupMsg == nil {
-		r.rollupMsg = map[string]interface{}{
+		r.rollupMsg = map[string]any{
 			"status-code": r.StatusCode,
 			"op":          r.Op,
-			"count":       int64(0),
 			"method":      r.HTTPMethod,
 			"via":         "kayvee-middleware",
 		}
 	}
-
-	r.rollupMsg["count"] = r.rollupMsg["count"].(int64) + 1
-	r.rollupResponseTimeNsSum += logmsg["response-time"].(time.Duration).Nanoseconds()
 }

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"os"
@@ -20,10 +21,10 @@ import (
 /////////////////////
 
 // Formatter is a function type that takes a map and returns a formatted string with the contents of the map
-type Formatter func(data map[string]interface{}) string
+type Formatter func(data map[string]any) string
 
 // M is a convenience type for passing data into a log message.
-type M map[string]interface{}
+type M map[string]any
 
 // LogLevel is an enum is used to denote level of logging
 type LogLevel int
@@ -96,11 +97,12 @@ func (t *Timer) Stop() {
 // It provides customization of globals, default log level, formatting, and output destination.
 type Logger struct {
 	globalsL      sync.RWMutex
-	globals       map[string]interface{}
+	globals       map[string]any
 	logLvl        LogLevel
 	fLogger       formatLogger
 	logRouter     router.Router
 	metricsOutput metricsOutput
+	buf           *bufio.Writer // Buffered writer for log output
 }
 
 var globalRouter router.Router
@@ -138,7 +140,7 @@ func (l *Logger) SetConfig(source string, logLvl LogLevel, formatter Formatter, 
 	defer l.globalsL.Unlock()
 
 	if l.globals == nil {
-		l.globals = make(map[string]interface{})
+		l.globals = make(map[string]any)
 	}
 	l.globals["source"] = source
 	l.logLvl = logLvl
@@ -154,7 +156,7 @@ func (l *Logger) AddContext(key, val string) {
 }
 
 // GetContext implements the method for the KayveeLogger interface.
-func (l *Logger) GetContext(key string) (interface{}, bool) {
+func (l *Logger) GetContext(key string) (any, bool) {
 	l.globalsL.RLock()
 	defer l.globalsL.RUnlock()
 	val, ok := l.globals[key]
@@ -178,7 +180,25 @@ func (l *Logger) SetFormatter(formatter Formatter) {
 
 // SetOutput implements the method for the KayveeLogger interface.
 func (l *Logger) SetOutput(output io.Writer) {
+	// If someone is setting the output we assume that they are handling
+	// any buffering outside of the logger, so clear the internal
+	// default buffer.
+	l.buf = nil
 	l.fLogger.setOutput(output)
+}
+
+// Flush ensures all buffered log output is written.
+func (l *Logger) Flush() {
+	l.flush()
+}
+
+func (l *Logger) flush() {
+	if l.buf != nil {
+		err := l.buf.Flush() // Flush buffered output
+		if err != nil {
+			log.Printf("ERROR: Failed to flush log buffer: %v\n", err)
+		}
+	}
 }
 
 func (l *Logger) setFormatLogger(fl formatLogger) {
@@ -234,44 +254,44 @@ func (l *Logger) GaugeFloat(title string, value float64) {
 }
 
 // TraceD implements the method for the KayveeLogger interface.
-func (l *Logger) TraceD(title string, data map[string]interface{}) {
+func (l *Logger) TraceD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Trace, data)
 }
 
 // DebugD implements the method for the KayveeLogger interface.
-func (l *Logger) DebugD(title string, data map[string]interface{}) {
+func (l *Logger) DebugD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Debug, data)
 }
 
 // InfoD implements the method for the KayveeLogger interface.
-func (l *Logger) InfoD(title string, data map[string]interface{}) {
+func (l *Logger) InfoD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Info, data)
 }
 
 // WarnD implements the method for the KayveeLogger interface.
-func (l *Logger) WarnD(title string, data map[string]interface{}) {
+func (l *Logger) WarnD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Warning, data)
 }
 
 // ErrorD implements the method for the KayveeLogger interface.
-func (l *Logger) ErrorD(title string, data map[string]interface{}) {
+func (l *Logger) ErrorD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Error, data)
 }
 
 // CriticalD implements the method for the KayveeLogger interface.
-func (l *Logger) CriticalD(title string, data map[string]interface{}) {
+func (l *Logger) CriticalD(title string, data map[string]any) {
 	data["title"] = title
 	l.logWithLevel(Critical, data)
 }
 
 // CounterD implements the method for the KayveeLogger interface.
 // Logs with type = up/down counter, and value = value
-func (l *Logger) CounterD(title string, value int, data map[string]interface{}) {
+func (l *Logger) CounterD(title string, value int, data map[string]any) {
 	data["title"] = title
 	data["value"] = value
 	data["type"] = "counter"
@@ -280,13 +300,13 @@ func (l *Logger) CounterD(title string, value int, data map[string]interface{}) 
 
 // GaugeIntD implements the method for the KayveeLogger interface.
 // Logs with type = gauge, and value = value
-func (l *Logger) GaugeIntD(title string, value int, data map[string]interface{}) {
+func (l *Logger) GaugeIntD(title string, value int, data map[string]any) {
 	l.gauge(title, value, data)
 }
 
 // GaugeFloatD implements the method for the KayveeLogger interface.
 // Logs with type = gauge, and value = value
-func (l *Logger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
+func (l *Logger) GaugeFloatD(title string, value float64, data map[string]any) {
 	l.gauge(title, value, data)
 }
 
@@ -298,12 +318,12 @@ func (l *Logger) Timer(title string) *Timer {
 
 // TimerD implements the method for the KayveeLogger interface.
 // Returns Timer structure with .Stop method
-func (l *Logger) TimerD(title string, data map[string]interface{}) *Timer {
+func (l *Logger) TimerD(title string, data map[string]any) *Timer {
 	l.DebugD(title+"-start", data)
 	return &Timer{Logger: l, StartedAt: time.Now(), Title: title}
 }
 
-func (l *Logger) gauge(title string, value interface{}, data map[string]interface{}) {
+func (l *Logger) gauge(title string, value any, data map[string]any) {
 	data["title"] = title
 	data["value"] = value
 	data["type"] = "gauge"
@@ -312,14 +332,13 @@ func (l *Logger) gauge(title string, value interface{}, data map[string]interfac
 
 // Actual logging. Handles whether to output based on log level and
 // unifies the passed in data with the stored globals
-func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
+func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]any) {
 	if logLvl < l.logLvl {
 		// No log output
 		return
 	}
 	data["level"] = logLvl.String()
 	l.globalsL.RLock()
-	defer l.globalsL.RUnlock()
 	for key, value := range l.globals {
 		if _, ok := data[key]; ok {
 			// Values in the data map override the globals
@@ -327,6 +346,8 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 		}
 		data[key] = value
 	}
+	l.globalsL.RUnlock()
+
 	if l.logRouter != nil {
 		data["_kvmeta"] = l.logRouter.Route(data)
 	} else if globalRouter != nil {
@@ -337,7 +358,7 @@ func (l *Logger) logWithLevel(logLvl LogLevel, data map[string]interface{}) {
 }
 
 // updateContextMapIfNotReserved updates context[key] to val if key is not in the reserved list.
-func updateContextMapIfNotReserved(context M, key string, val interface{}) {
+func updateContextMapIfNotReserved(context M, key string, val any) {
 	if reservedKeyNames[strings.ToLower(key)] {
 		log.Printf("WARN: kayvee logger reserves '%s' from being set as context", key)
 		return
@@ -352,7 +373,7 @@ func New(source string) KayveeLogger {
 }
 
 // NewWithContext creates a *logger.Logger. Default values are Debug LogLevel, kayvee Formatter, and std.err output.
-func NewWithContext(source string, contextValues map[string]interface{}) KayveeLogger {
+func NewWithContext(source string, contextValues map[string]any) KayveeLogger {
 	return NewConcreteLoggerWithContext(source, contextValues)
 }
 
@@ -368,7 +389,7 @@ func NewWithContext(source string, contextValues map[string]interface{}) KayveeL
 // format and writing steps.
 type formatLogger interface {
 	// formatAndLog processes the given data map into a log line and writes it
-	formatAndLog(data map[string]interface{})
+	formatAndLog(data map[string]any)
 
 	// setFormatter specifies the Formatter function to use in formatAndLog
 	setFormatter(formatter Formatter)
@@ -384,7 +405,7 @@ type defaultFormatLogger struct {
 }
 
 // formatAndLog implements the formatLogger interface for *defaultFormatLogger.
-func (fl *defaultFormatLogger) formatAndLog(data map[string]interface{}) {
+func (fl *defaultFormatLogger) formatAndLog(data map[string]any) {
 	logString := fl.formatter(data)
 	fl.logWriter.Println(logString)
 }
@@ -400,7 +421,7 @@ func (fl *defaultFormatLogger) setOutput(output io.Writer) {
 }
 
 // Log is a basic logging method that fulfills the WagClientLogger interface.
-func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]interface{}) {
+func (l *Logger) Log(level wcl.LogLevel, title string, m map[string]any) {
 	m["title"] = title
 	l.logWithLevel(LogLevel(level), m)
 }
@@ -443,6 +464,7 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 	}
 	logObj := Logger{
 		globals: ctx,
+		buf:     bufio.NewWriter(os.Stderr), // Default buffered writer
 	}
 
 	logObj.metricsOutput = logMetrics
@@ -463,8 +485,15 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 		}
 	}
 
-	logObj.SetConfig(source, logLvl, kv.Format, os.Stderr)
+	// Start periodic flush (every 10 second)
+	tic := time.NewTicker(10 * time.Second)
+	go func() {
+		for range tic.C {
+			logObj.flush()
+		}
+	}()
+
+	logObj.SetConfig(source, logLvl, kv.Format, logObj.buf)
 
 	return &logObj
-
 }
