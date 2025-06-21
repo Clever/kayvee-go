@@ -1,0 +1,66 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/Clever/kayvee-go/v7/benchmarks
+cpu: Apple M1 Pro
+BenchmarkNoRoutingWithBasicCorpus-8                    	   49858	     23239 ns/op	   20509 B/op	     420 allocs/op
+BenchmarkNoRoutingWithBasicCorpus-8                    	   50482	     23637 ns/op	   20509 B/op	     420 allocs/op
+BenchmarkNoRoutingWithBasicCorpus-8                    	   51127	     23412 ns/op	   20509 B/op	     420 allocs/op
+BenchmarkNoRoutingWithBasicCorpus-8                    	   51198	     23415 ns/op	   20509 B/op	     420 allocs/op
+BenchmarkNoRoutingWithBasicCorpus-8                    	   51385	     23490 ns/op	   20509 B/op	     420 allocs/op
+BenchmarkNoRoutingWithPathologicalCorpus-8             	    2649	    453645 ns/op	  384770 B/op	    4382 allocs/op
+BenchmarkNoRoutingWithPathologicalCorpus-8             	    2650	    456968 ns/op	  384688 B/op	    4382 allocs/op
+BenchmarkNoRoutingWithPathologicalCorpus-8             	    2551	    471407 ns/op	  384840 B/op	    4382 allocs/op
+BenchmarkNoRoutingWithPathologicalCorpus-8             	    2550	    456952 ns/op	  384724 B/op	    4382 allocs/op
+BenchmarkNoRoutingWithPathologicalCorpus-8             	    2661	    459920 ns/op	  384824 B/op	    4382 allocs/op
+BenchmarkNoRoutingWithRealisticCorpus-8                	   20859	     57755 ns/op	   35504 B/op	     736 allocs/op
+BenchmarkNoRoutingWithRealisticCorpus-8                	   18660	     56615 ns/op	   35510 B/op	     736 allocs/op
+BenchmarkNoRoutingWithRealisticCorpus-8                	   21524	     56694 ns/op	   35508 B/op	     736 allocs/op
+BenchmarkNoRoutingWithRealisticCorpus-8                	   21014	     62277 ns/op	   35506 B/op	     736 allocs/op
+BenchmarkNoRoutingWithRealisticCorpus-8                	   20167	     57347 ns/op	   35506 B/op	     736 allocs/op
+BenchmarkBasicRoutingWithBasicCorpus-8                 	   26535	     43981 ns/op	   40159 B/op	     759 allocs/op
+BenchmarkBasicRoutingWithBasicCorpus-8                 	   27136	     43561 ns/op	   40200 B/op	     759 allocs/op
+BenchmarkBasicRoutingWithBasicCorpus-8                 	   27733	     44045 ns/op	   40187 B/op	     759 allocs/op
+BenchmarkBasicRoutingWithBasicCorpus-8                 	   27255	     47269 ns/op	   40189 B/op	     759 allocs/op
+BenchmarkBasicRoutingWithBasicCorpus-8                 	   25999	     45443 ns/op	   40188 B/op	     759 allocs/op
+BenchmarkBasicRoutingWithPathologicalCorpus-8          	    2463	    507954 ns/op	  399201 B/op	    4702 allocs/op
+BenchmarkBasicRoutingWithPathologicalCorpus-8          	    2529	    515078 ns/op	  399431 B/op	    4702 allocs/op
+BenchmarkBasicRoutingWithPathologicalCorpus-8          	    2374	    481696 ns/op	  399291 B/op	    4702 allocs/op
+BenchmarkBasicRoutingWithPathologicalCorpus-8          	    2491	    481532 ns/op	  399302 B/op	    4702 allocs/op
+BenchmarkBasicRoutingWithPathologicalCorpus-8          	    2497	    482814 ns/op	  399244 B/op	    4702 allocs/op
+BenchmarkBasicRoutingWithRealisticCorpus-8             	   15524	     78179 ns/op	   53924 B/op	    1056 allocs/op
+BenchmarkBasicRoutingWithRealisticCorpus-8             	   15489	     78640 ns/op	   53919 B/op	    1056 allocs/op
+BenchmarkBasicRoutingWithRealisticCorpus-8             	   15297	     79266 ns/op	   53927 B/op	    1056 allocs/op
+BenchmarkBasicRoutingWithRealisticCorpus-8             	   15405	     77531 ns/op	   53924 B/op	    1056 allocs/op
+BenchmarkBasicRoutingWithRealisticCorpus-8             	   15500	     77211 ns/op	   53912 B/op	    1056 allocs/op
+BenchmarkPathologicalRoutingWithBasicCorpus-8          	   23571	     51084 ns/op	   38623 B/op	     740 allocs/op
+BenchmarkPathologicalRoutingWithBasicCorpus-8          	   23530	     51192 ns/op	   38624 B/op	     740 allocs/op
+BenchmarkPathologicalRoutingWithBasicCorpus-8          	   23454	     50917 ns/op	   38624 B/op	     740 allocs/op
+BenchmarkPathologicalRoutingWithBasicCorpus-8          	   23602	     51105 ns/op	   38623 B/op	     740 allocs/op
+BenchmarkPathologicalRoutingWithBasicCorpus-8          	   21130	     55412 ns/op	   38626 B/op	     740 allocs/op
+BenchmarkPathologicalRoutingWithPathologicalCorpus-8   	    1446	    833512 ns/op	  636043 B/op	    5571 allocs/op
+BenchmarkPathologicalRoutingWithPathologicalCorpus-8   	    1428	    877990 ns/op	  636368 B/op	    5571 allocs/op
+BenchmarkPathologicalRoutingWithPathologicalCorpus-8   	    1416	    858957 ns/op	  637453 B/op	    5571 allocs/op
+BenchmarkPathologicalRoutingWithPathologicalCorpus-8   	    1410	    850514 ns/op	  636428 B/op	    5571 allocs/op
+BenchmarkPathologicalRoutingWithPathologicalCorpus-8   	    1390	    879505 ns/op	  638490 B/op	    5572 allocs/op
+BenchmarkPathologicalRoutingWithRealisticCorpus-8      	   13549	     88253 ns/op	   53927 B/op	    1056 allocs/op
+BenchmarkPathologicalRoutingWithRealisticCorpus-8      	   13566	     88788 ns/op	   53936 B/op	    1056 allocs/op
+BenchmarkPathologicalRoutingWithRealisticCorpus-8      	   13516	     88899 ns/op	   53933 B/op	    1056 allocs/op
+BenchmarkPathologicalRoutingWithRealisticCorpus-8      	   13521	     88781 ns/op	   53930 B/op	    1056 allocs/op
+BenchmarkPathologicalRoutingWithRealisticCorpus-8      	   13585	     88643 ns/op	   53925 B/op	    1056 allocs/op
+BenchmarkRealisticRoutingWithBasicCorpus-8             	   25762	     46155 ns/op	   38623 B/op	     740 allocs/op
+BenchmarkRealisticRoutingWithBasicCorpus-8             	   25520	     46541 ns/op	   38624 B/op	     740 allocs/op
+BenchmarkRealisticRoutingWithBasicCorpus-8             	   25976	     46183 ns/op	   38624 B/op	     740 allocs/op
+BenchmarkRealisticRoutingWithBasicCorpus-8             	   25899	     46390 ns/op	   38624 B/op	     740 allocs/op
+BenchmarkRealisticRoutingWithBasicCorpus-8             	   25855	     46330 ns/op	   38623 B/op	     740 allocs/op
+BenchmarkRealisticRoutingWithPathologicalCorpus-8      	    2508	    491183 ns/op	  399432 B/op	    4702 allocs/op
+BenchmarkRealisticRoutingWithPathologicalCorpus-8      	    2440	    491941 ns/op	  399235 B/op	    4702 allocs/op
+BenchmarkRealisticRoutingWithPathologicalCorpus-8      	    2434	    505088 ns/op	  399415 B/op	    4702 allocs/op
+BenchmarkRealisticRoutingWithPathologicalCorpus-8      	    2458	    492688 ns/op	  399328 B/op	    4702 allocs/op
+BenchmarkRealisticRoutingWithPathologicalCorpus-8      	    2457	    488962 ns/op	  399372 B/op	    4702 allocs/op
+BenchmarkRealisticRoutingWithRealisticCorpus-8         	   14504	     84744 ns/op	   53926 B/op	    1056 allocs/op
+BenchmarkRealisticRoutingWithRealisticCorpus-8         	   14462	     84803 ns/op	   53926 B/op	    1056 allocs/op
+BenchmarkRealisticRoutingWithRealisticCorpus-8         	   14184	     83273 ns/op	   53928 B/op	    1056 allocs/op
+BenchmarkRealisticRoutingWithRealisticCorpus-8         	   14524	     85741 ns/op	   53927 B/op	    1056 allocs/op
+BenchmarkRealisticRoutingWithRealisticCorpus-8         	   14595	     83744 ns/op	   53924 B/op	    1056 allocs/op
+PASS
+ok  	github.com/Clever/kayvee-go/v7/benchmarks	97.906s
