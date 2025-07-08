@@ -1,6 +1,7 @@
 package kinesisstream
 
 import (
+	context "context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,26 +11,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Clever/kayvee-go/v7/logger/analytics"
-
 	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
-	"github.com/eapache/go-resiliency/retrier"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 )
 
-//go:generate mockgen -package $GOPACKAGE -destination mock_kinesis.go github.com/aws/aws-sdk-go/service/kinesis/kinesisiface KinesisAPI
+//go:generate mockgen -package $GOPACKAGE -source kinesisstreamlogger.go -destination mock_kinesis.go KinesisClient
+type KinesisClient interface {
+	PutRecords(ctx context.Context, params *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error)
+}
 
 // Logger writes to Kinesis.
 type Logger struct {
 	logger.KayveeLogger
 	errLogger       logger.KayveeLogger
 	kinesisStream   string
-	kinesisAPI      kinesisiface.KinesisAPI
-	batch           []*kinesis.PutRecordsRequestEntry
+	kinesisAPI      KinesisClient
+	batch           []types.PutRecordsRequestEntry
 	batchBytes      int
 	maxBatchRecords int
 	maxBatchBytes   int
@@ -79,7 +79,7 @@ type Config struct {
 	// KinesisPutRecordBatchMaxTime overrides the default value (10 minutes) for the maximum amount of time between writing an event and sending to the stream.
 	KinesisPutRecordBatchMaxTime time.Duration
 	// KinesisAPI defaults to an API object configured with Region, but can be overriden here.
-	KinesisAPI kinesisiface.KinesisAPI
+	KinesisAPI KinesisClient
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
 	ErrLogger logger.KayveeLogger
 }
@@ -126,20 +126,13 @@ func New(c Config) (*Logger, error) {
 	ksl.done = make(chan bool)
 
 	if c.KinesisAPI != nil {
-		// make an effort to override endpoint resolver
-		if k, ok := c.KinesisAPI.(*kinesis.Kinesis); ok {
-			k.Client.Config.EndpointResolver = analytics.EndpointResolver
-			ksl.kinesisAPI = k
-		} else {
-			ksl.kinesisAPI = c.KinesisAPI
-		}
+		ksl.kinesisAPI = c.KinesisAPI
 	} else if c.Region != "" {
-		config := aws.NewConfig().WithRegion(c.Region).WithEndpointResolver(analytics.EndpointResolver)
-		sess, err := session.NewSession(config)
+		awscfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(c.Region))
 		if err != nil {
-			return nil, fmt.Errorf("error creating kinesis client: %v", err)
+			return nil, err
 		}
-		ksl.kinesisAPI = kinesis.New(sess)
+		ksl.kinesisAPI = kinesis.NewFromConfig(awscfg)
 	} else {
 		return nil, errors.New("must provide KinesisAPI or Region")
 	}
@@ -186,7 +179,7 @@ func (ksl *Logger) Write(bs []byte) (int, error) {
 	bs = append(bs, '\n')
 	ksl.mu.Lock()
 	ksl.batchBytes += len(bs)
-	ksl.batch = append(ksl.batch, &kinesis.PutRecordsRequestEntry{
+	ksl.batch = append(ksl.batch, types.PutRecordsRequestEntry{
 		Data:         bs,
 		PartitionKey: &partitionKey,
 	})
@@ -232,31 +225,25 @@ func (ksl *Logger) Close() error {
 	return nil
 }
 
-func sendBatch(batch []*kinesis.PutRecordsRequestEntry, kinesisAPI kinesisiface.KinesisAPI, kinesisStream string, timeout time.Time) error {
+func sendBatch(batch []types.PutRecordsRequestEntry, kinesisAPI KinesisClient, kinesisStream string, timeout time.Time) error {
 	// call PutRecordBatch until all records in the batch have been sent successfully
 	for time.Now().Before(timeout) {
-		var result *kinesis.PutRecordsOutput
-		r := retrier.New(retrier.ExponentialBackoff(5, 100*time.Millisecond), RequestErrorClassifier{})
-		if err := r.Run(func() error {
-			out, err := kinesisAPI.PutRecords(&kinesis.PutRecordsInput{
-				StreamName: aws.String(kinesisStream),
-				Records:    batch,
-			})
-			if err != nil {
-				return err
-			}
-			result = out
-			return nil
-		}); err != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), timeout)
+		defer cancel()
+		result, err := kinesisAPI.PutRecords(ctx, &kinesis.PutRecordsInput{
+			StreamName: aws.String(kinesisStream),
+			Records:    batch,
+		})
+		if err != nil {
 			return err
 		}
-		if aws.Int64Value(result.FailedRecordCount) == 0 {
+		if aws.ToInt32(result.FailedRecordCount) == 0 {
 			return nil
 		}
 		// formulate a new batch consisting of the unprocessed items
-		newbatch := []*kinesis.PutRecordsRequestEntry{}
+		newbatch := []types.PutRecordsRequestEntry{}
 		for i, res := range result.Records {
-			if aws.StringValue(res.ErrorCode) == "" {
+			if aws.ToString(res.ErrorCode) == "" {
 				continue
 			}
 			newbatch = append(newbatch, batch[i])
@@ -271,21 +258,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// RequestErrorClassifier corrects for AWS SDK's lack of automatic retry on
-// "RequestError: connection reset by peer"
-type RequestErrorClassifier struct{}
-
-var _ retrier.Classifier = RequestErrorClassifier{}
-
-// Classify the error.
-func (RequestErrorClassifier) Classify(err error) retrier.Action {
-	if err == nil {
-		return retrier.Succeed
-	}
-	if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "RequestError" {
-		return retrier.Retry
-	}
-	return retrier.Fail
 }
