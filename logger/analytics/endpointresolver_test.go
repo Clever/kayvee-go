@@ -1,32 +1,45 @@
 package analytics
 
 import (
-	"os"
+	"net/url"
+	"reflect"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
 )
 
-func Test_environmentVariableEndpointResolver(t *testing.T) {
-	type args struct {
-		service string
-		region  string
-	}
+func mustUrlParse(s string) *url.URL {
+	u, _ := url.Parse(s)
+	return u
+}
+
+func Test_endpointResolver_ResolveEndpoint(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
-		want    string
+		region  string
+		want    url.URL
 		wantErr bool
 		setEnv  map[string]string
 	}{
 		{
 			name:    "default endpoint",
-			args:    args{service: "firehose", region: "us-west-2"},
-			want:    "https://firehose.us-west-2.amazonaws.com",
+			region:  "us-west-2",
+			want:    *mustUrlParse("https://firehose.us-west-2.amazonaws.com"),
 			wantErr: false,
 		},
 		{
+			name:    "default endpoint for us-west-1",
+			region:  "us-west-1",
+			want:    *mustUrlParse("https://firehose.us-west-1.amazonaws.com"),
+			wantErr: false,
+			setEnv: map[string]string{
+				"AWS_FIREHOSE_US_WEST_2_ENDPOINT": "https://vpce-0123456789abcdefg-hijklmno.firehose.us-west-2.vpce.amazonaws.com",
+			},
+		},
+		{
 			name:    "override",
-			args:    args{service: "firehose", region: "us-west-2"},
-			want:    "https://vpce-0123456789abcdefg-hijklmno.firehose.us-west-2.vpce.amazonaws.com",
+			region:  "us-west-2",
+			want:    *mustUrlParse("https://vpce-0123456789abcdefg-hijklmno.firehose.us-west-2.vpce.amazonaws.com"),
 			wantErr: false,
 			setEnv: map[string]string{
 				"AWS_FIREHOSE_US_WEST_2_ENDPOINT": "https://vpce-0123456789abcdefg-hijklmno.firehose.us-west-2.vpce.amazonaws.com",
@@ -35,19 +48,17 @@ func Test_environmentVariableEndpointResolver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.setEnv != nil {
-				for k, v := range tt.setEnv {
-					os.Setenv(k, v)
-					defer os.Unsetenv(k)
-				}
+			for k, v := range tt.setEnv {
+				t.Setenv(k, v)
 			}
-			got, err := environmentVariableEndpointResolver(tt.args.service, tt.args.region)
+			e := &endpointResolver{}
+			got, err := e.ResolveEndpoint(t.Context(), firehose.EndpointParameters{Region: &tt.region})
 			if (err != nil) != tt.wantErr {
-				t.Errorf("environmentVariableEndpointResolver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("endpointResolver.ResolveEndpoint() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got.URL != tt.want {
-				t.Errorf("environmentVariableEndpointResolver() = '%s', want '%s'", got.URL, tt.want)
+			if !reflect.DeepEqual(got.URI, tt.want) {
+				t.Errorf("endpointResolver.ResolveEndpoint() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

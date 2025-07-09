@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	context "context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,23 +11,25 @@ import (
 	"time"
 
 	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/firehose"
-	"github.com/aws/aws-sdk-go/service/firehose/firehoseiface"
-	"github.com/eapache/go-resiliency/retrier"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
 )
 
-//go:generate mockgen -package $GOPACKAGE -destination mock_firehose.go github.com/aws/aws-sdk-go/service/firehose/firehoseiface FirehoseAPI
+//go:generate mockgen -package $GOPACKAGE -source analyticslogger.go -destination mock_firehose.go FirehoseClient
+
+type FirehoseClient interface {
+	PutRecordBatch(ctx context.Context, params *firehose.PutRecordBatchInput, optFns ...func(*firehose.Options)) (*firehose.PutRecordBatchOutput, error)
+}
 
 // Logger writes to Firehose.
 type Logger struct {
 	logger.KayveeLogger
 	errLogger       logger.KayveeLogger
 	fhStream        string
-	fhAPI           firehoseiface.FirehoseAPI
-	batch           []*firehose.Record
+	fhAPI           FirehoseClient
+	batch           []types.Record
 	batchBytes      int
 	maxBatchRecords int
 	maxBatchBytes   int
@@ -72,7 +75,7 @@ type Config struct {
 	// FirehosePutRecordBatchMaxTime overrides the default value (10 minutes) for the maximum amount of time between writing an event and sending to the firehose.
 	FirehosePutRecordBatchMaxTime time.Duration
 	// FirehoseAPI defaults to an API object configured with Region, but can be overriden here.
-	FirehoseAPI firehoseiface.FirehoseAPI
+	FirehoseAPI FirehoseClient
 	// ErrLogger is a logger used to make sure errors from goroutines still get surfaced. Defaults to basic logger.Logger
 	ErrLogger logger.KayveeLogger
 	// VPCEndpoint determines whether to use the VPC endpoint of firehose. Default: true
@@ -127,20 +130,20 @@ func New(c Config) (*Logger, error) {
 	if c.FirehoseAPI != nil {
 		al.fhAPI = c.FirehoseAPI
 		// make an effort to override endpoint resolver
-		if f, ok := c.FirehoseAPI.(*firehose.Firehose); ok && vpcEndpoint {
-			f.Client.Config.EndpointResolver = EndpointResolver
-			al.fhAPI = f
+		if f, ok := c.FirehoseAPI.(*firehose.Client); ok && vpcEndpoint {
+			newf := firehose.New(f.Options(), firehose.WithEndpointResolverV2(&endpointResolver{}))
+			al.fhAPI = newf
 		}
 	} else if c.Region != "" {
-		config := aws.NewConfig().WithRegion(c.Region)
-		if vpcEndpoint {
-			config = config.WithEndpointResolver(EndpointResolver)
-		}
-		sess, err := session.NewSession(config)
+		awscfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(c.Region))
 		if err != nil {
 			return nil, fmt.Errorf("error creating firehose client: %v", err)
 		}
-		al.fhAPI = firehose.New(sess)
+		al.fhAPI = firehose.NewFromConfig(awscfg, func(o *firehose.Options) {
+			if vpcEndpoint {
+				firehose.WithEndpointResolverV2(&endpointResolver{})(o)
+			}
+		})
 	} else {
 		return nil, errors.New("must provide FirehoseAPI or Region")
 	}
@@ -182,7 +185,7 @@ func (al *Logger) Write(bs []byte) (int, error) {
 	bs = append(bs, '\n')
 	al.mu.Lock()
 	al.batchBytes += len(bs)
-	al.batch = append(al.batch, &firehose.Record{Data: bs})
+	al.batch = append(al.batch, types.Record{Data: bs})
 	shouldSendBatch := len(al.batch) == al.maxBatchRecords ||
 		al.batchBytes > int(0.9*float64(al.maxBatchBytes))
 	al.mu.Unlock()
@@ -225,31 +228,25 @@ func (al *Logger) Close() error {
 	return nil
 }
 
-func sendBatch(batch []*firehose.Record, fhAPI firehoseiface.FirehoseAPI, fhStream string, timeout time.Time) error {
+func sendBatch(batch []types.Record, fhAPI FirehoseClient, fhStream string, timeout time.Time) error {
 	// call PutRecordBatch until all records in the batch have been sent successfully
 	for time.Now().Before(timeout) {
-		var result *firehose.PutRecordBatchOutput
-		r := retrier.New(retrier.ExponentialBackoff(5, 100*time.Millisecond), RequestErrorClassifier{})
-		if err := r.Run(func() error {
-			out, err := fhAPI.PutRecordBatch(&firehose.PutRecordBatchInput{
-				DeliveryStreamName: aws.String(fhStream),
-				Records:            batch,
-			})
-			if err != nil {
-				return err
-			}
-			result = out
-			return nil
-		}); err != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), timeout)
+		defer cancel()
+		result, err := fhAPI.PutRecordBatch(ctx, &firehose.PutRecordBatchInput{
+			DeliveryStreamName: aws.String(fhStream),
+			Records:            batch,
+		})
+		if err != nil {
 			return err
 		}
-		if aws.Int64Value(result.FailedPutCount) == 0 {
+		if aws.ToInt32(result.FailedPutCount) == 0 {
 			return nil
 		}
 		// formulate a new batch consisting of the unprocessed items
-		newbatch := []*firehose.Record{}
+		newbatch := []types.Record{}
 		for i, res := range result.RequestResponses {
-			if aws.StringValue(res.ErrorCode) == "" {
+			if aws.ToString(res.ErrorCode) == "" {
 				continue
 			}
 			newbatch = append(newbatch, batch[i])
@@ -264,21 +261,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// RequestErrorClassifier corrects for AWS SDK's lack of automatic retry on
-// "RequestError: connection reset by peer"
-type RequestErrorClassifier struct{}
-
-var _ retrier.Classifier = RequestErrorClassifier{}
-
-// Classify the error.
-func (RequestErrorClassifier) Classify(err error) retrier.Action {
-	if err == nil {
-		return retrier.Succeed
-	}
-	if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "RequestError" {
-		return retrier.Retry
-	}
-	return retrier.Fail
 }

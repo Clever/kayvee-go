@@ -1,12 +1,15 @@
 package analytics
 
 import (
+	context "context"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/endpoints"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 )
 
 // reNotGoodEnvVarChars is a negated character set of characters that are good
@@ -17,23 +20,19 @@ func toEnvVar(s string) string {
 	return strings.ToUpper(reNotGoodEnvVarChars.ReplaceAllString(s, "_"))
 }
 
-// environmentVariableEndpointResolver implements endpoints.ResolverFunc by
-// reading an environment variable corresponding to the service and region.
-// This is how aws-sdk-go supports custom endpoints:
-// https://docs.aws.amazon.com/sdk-for-go/api/aws/endpoints/
-func environmentVariableEndpointResolver(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-	// e.g., AWS_S3_US_WEST_1_ENDPOINT
-	envVar := fmt.Sprintf("AWS_%s_%s_ENDPOINT", toEnvVar(service), toEnvVar(region))
+type endpointResolver struct{}
+
+func (*endpointResolver) ResolveEndpoint(ctx context.Context, params firehose.EndpointParameters) (smithyendpoints.Endpoint, error) {
+	envVar := fmt.Sprintf("AWS_FIREHOSE_%s_ENDPOINT", toEnvVar(*params.Region))
 	if e := os.Getenv(envVar); e != "" {
-		return endpoints.ResolvedEndpoint{
-			URL: e,
+		u, err := url.Parse(e)
+		if err != nil {
+			return smithyendpoints.Endpoint{}, err
+		}
+		return smithyendpoints.Endpoint{
+			URI: *u,
 		}, nil
 	}
 
-	return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+	return firehose.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, params)
 }
-
-// EndpointResolver is used to override the endpoints that AWS clients use. In
-// particular for reducing networking costs for cross-region traffic, we sometimes
-// use a VPC endpoint rather than going through the public internet and a NAT Gateway
-var EndpointResolver endpoints.Resolver = endpoints.ResolverFunc(environmentVariableEndpointResolver)
