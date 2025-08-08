@@ -105,25 +105,28 @@ func (r *RollupRouter) Process(logmsg map[string]any) {
 func (r *RollupRouter) add(statusCode int, op, method string, logmsg map[string]any) {
 	key := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
 
-	var rollup *logRollup
-	if ru, ok := r.rollups.Load(key); ok {
-		rollup = ru.(*logRollup)
-	} else {
-		rollup = &logRollup{
-			logger:                  r.logger,
-			statusCode:              statusCode,
-			op:                      op,
-			httpMethod:              method,
-			count:                   new(int64),
-			rollupResponseTimeNsSum: new(int64),
-		}
-		go rollup.report(r.ctx, r.reportingDelay)
+	rollup, ok := r.rollups.LoadOrStore(key, &logRollup{
+		logger:     r.logger,
+		statusCode: statusCode,
+		op:         op,
+		httpMethod: method,
+	})
 
-		r.rollups.Store(key, rollup)
+	ru := rollup.(*logRollup)
+	if !ok {
+		go ru.report(r.ctx, r.reportingDelay)
 	}
 
-	atomic.AddInt64(rollup.count, 1)
-	atomic.AddInt64(rollup.rollupResponseTimeNsSum, logmsg["response-time"].(time.Duration).Nanoseconds())
+	atomic.AddInt64(&ru.count, 1)
+	atomic.AddInt64(&ru.rollupResponseTimeNsSum, logmsg["response-time"].(time.Duration).Nanoseconds())
+}
+
+func (r *RollupRouter) Flush() {
+	r.rollups.Range(func(_, value any) bool {
+		rollup := value.(*logRollup)
+		rollup.flush()
+		return true
+	})
 }
 
 // logRollup represents a single rollup.
@@ -132,8 +135,8 @@ type logRollup struct {
 	statusCode              int
 	op                      string
 	httpMethod              string
-	count                   *int64
-	rollupResponseTimeNsSum *int64
+	count                   int64
+	rollupResponseTimeNsSum int64
 }
 
 func (r *logRollup) report(ctx context.Context, interval time.Duration) {
@@ -143,32 +146,36 @@ func (r *logRollup) report(ctx context.Context, interval time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-t:
-			count := atomic.SwapInt64(r.count, 0)
-			sum := atomic.SwapInt64(r.rollupResponseTimeNsSum, 0) / int64(time.Millisecond)
-
-			if count == 0 {
-				// no logs yet so return
-				return
-			}
-
-			msg := logger.M{
-				"status-code":          r.statusCode,
-				"op":                   r.op,
-				"method":               r.httpMethod,
-				"via":                  "kayvee-middleware",
-				"count":                count,
-				"response-time-ms-sum": sum,
-				"response-time-ms":     sum / count,
-			}
-
-			switch logLevelFromStatus(r.statusCode) {
-			case logger.Error:
-				r.logger.ErrorD("request-finished-rollup", msg)
-			case logger.Warning:
-				r.logger.WarnD("request-finished-rollup", msg)
-			default:
-				r.logger.InfoD("request-finished-rollup", msg)
-			}
+			r.flush()
 		}
+	}
+}
+
+func (r *logRollup) flush() {
+	count := atomic.SwapInt64(&r.count, 0)
+	sum := atomic.SwapInt64(&r.rollupResponseTimeNsSum, 0) / int64(time.Millisecond)
+
+	if count == 0 {
+		// no logs yet so return
+		return
+	}
+
+	msg := logger.M{
+		"status-code":          r.statusCode,
+		"op":                   r.op,
+		"method":               r.httpMethod,
+		"via":                  "kayvee-middleware",
+		"count":                count,
+		"response-time-ms-sum": sum,
+		"response-time-ms":     sum / count,
+	}
+
+	switch logLevelFromStatus(r.statusCode) {
+	case logger.Error:
+		r.logger.ErrorD("request-finished-rollup", msg)
+	case logger.Warning:
+		r.logger.WarnD("request-finished-rollup", msg)
+	default:
+		r.logger.InfoD("request-finished-rollup", msg)
 	}
 }

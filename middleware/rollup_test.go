@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	reportingDelay = time.Millisecond * 5
-	sleepDelay     = time.Millisecond * 10
+	reportingDelay = time.Second * 20
 )
 
 type RollupLoggerCall struct {
@@ -98,8 +97,7 @@ func TestProcess(t *testing.T) {
 	}
 	wg.Wait()
 
-	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + sleepDelay)
+	rr.Flush()
 
 	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
 		{
@@ -151,8 +149,8 @@ func TestSameOp2xx(t *testing.T) {
 	}
 	wg.Wait()
 
-	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + sleepDelay)
+	rr.Flush()
+
 	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
 		Title: "request-finished-rollup",
 		Data: map[string]any{
