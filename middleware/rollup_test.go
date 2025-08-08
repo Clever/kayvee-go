@@ -9,7 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const reportingDelay = time.Millisecond * 5
+const (
+	reportingDelay = time.Millisecond * 5
+	sleepDelay     = time.Millisecond * 10
+)
 
 type RollupLoggerCall struct {
 	Title string
@@ -96,7 +99,7 @@ func TestProcess(t *testing.T) {
 	wg.Wait()
 
 	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + 10*time.Millisecond)
+	time.Sleep(reportingDelay + sleepDelay)
 
 	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
 		{
@@ -149,7 +152,7 @@ func TestSameOp2xx(t *testing.T) {
 	wg.Wait()
 
 	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + 10*time.Millisecond)
+	time.Sleep(reportingDelay + sleepDelay)
 	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
 		Title: "request-finished-rollup",
 		Data: map[string]any{
