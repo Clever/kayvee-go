@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"bufio"
 	"io"
 	"log"
 	"os"
@@ -102,7 +101,7 @@ type Logger struct {
 	fLogger       formatLogger
 	logRouter     router.Router
 	metricsOutput metricsOutput
-	buf           *bufio.Writer // Buffered writer for log output
+	buf           *BufferedWriter
 }
 
 var globalRouter router.Router
@@ -464,7 +463,7 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 	}
 	logObj := Logger{
 		globals: ctx,
-		buf:     bufio.NewWriter(os.Stderr), // Default buffered writer
+		buf:     &BufferedWriter{Out: os.Stderr}, // Default buffered writer
 	}
 
 	logObj.metricsOutput = logMetrics
