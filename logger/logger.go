@@ -484,8 +484,8 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 		}
 	}
 
-	// Start periodic flush (every 10 second)
-	tic := time.NewTicker(10 * time.Second)
+	// Start periodic flush (every 30 second)
+	tic := time.NewTicker(30 * time.Second)
 	go func() {
 		for range tic.C {
 			logObj.flush()

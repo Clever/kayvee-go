@@ -4,16 +4,11 @@ import (
 	"bufio"
 	"io"
 	"sync"
-	"time"
 )
 
 const (
 	// _defaultBufferSize specifies the default size used by Buffer.
 	_defaultBufferSize = 256 * 1024 // 256 kB
-
-	// _defaultFlushInterval specifies the default flush interval for
-	// Buffer.
-	_defaultFlushInterval = 30 * time.Second
 )
 
 type BufferedWriter struct {
@@ -25,20 +20,10 @@ type BufferedWriter struct {
 	// Defaults to 256 kB if unspecified.
 	Size int
 
-	// FlushInterval specifies how often the writer should flush data if
-	// there have been no writes.
-	//
-	// Defaults to 30 seconds if unspecified.
-	FlushInterval time.Duration
-
 	// unexported fields for state
 	mu          sync.Mutex
 	initialized bool // whether initialize() has run
-	stopped     bool // whether Stop() has run
 	writer      *bufio.Writer
-	ticker      *time.Ticker
-	stop        chan struct{} // closed when flushLoop should stop
-	done        chan struct{} // closed when flushLoop has stopped
 }
 
 func (s *BufferedWriter) initialize() {
@@ -47,17 +32,8 @@ func (s *BufferedWriter) initialize() {
 		size = _defaultBufferSize
 	}
 
-	flushInterval := s.FlushInterval
-	if flushInterval == 0 {
-		flushInterval = _defaultFlushInterval
-	}
-
-	s.ticker = time.NewTicker(flushInterval)
 	s.writer = bufio.NewWriterSize(s.Out, size)
-	s.stop = make(chan struct{})
-	s.done = make(chan struct{})
 	s.initialized = true
-	go s.flushLoop()
 }
 
 // Write writes log data into buffer directly, multiple Write calls will be batched,
@@ -91,22 +67,4 @@ func (s *BufferedWriter) Flush() error {
 		return s.writer.Flush()
 	}
 	return nil
-}
-
-// flushLoop flushes the buffer at the configured interval until Stop is
-// called.
-func (s *BufferedWriter) flushLoop() {
-	defer close(s.done)
-
-	for {
-		select {
-		case <-s.ticker.C:
-			// we just simply ignore error here
-			// because the underlying bufio writer stores any errors
-			// and we return any error from Flush() as part of the close
-			_ = s.Flush()
-		case <-s.stop:
-			return
-		}
-	}
 }
