@@ -60,7 +60,7 @@ benchmark-data:
 benchmarks: benchmark-data
 	@go test -bench=. -benchmem -count=5 ./benchmarks > new-benchmarks.txt
 	@echo "Benchmarks written to new-benchmarks.txt"
-#	benchstat benchmarks.txt new-benchmarks.txt
+	benchstat benchmarks.txt new-benchmarks.txt
 
 tests.json:
 	cp tests.json test/tests.json

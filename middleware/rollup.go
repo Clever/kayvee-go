@@ -14,9 +14,9 @@ var globalRollupRouter *RollupRouter
 
 // RollupLogger will log info / error rollups depending on status code.
 type RollupLogger interface {
-	InfoD(title string, data map[string]interface{})
-	WarnD(title string, data map[string]interface{})
-	ErrorD(title string, data map[string]interface{})
+	InfoD(title string, data map[string]any)
+	WarnD(title string, data map[string]any)
+	ErrorD(title string, data map[string]any)
 }
 
 // EnableRollups turns on rollups for kv middleware logs.
@@ -29,11 +29,8 @@ type RollupRouter struct {
 	logger         RollupLogger
 	reportingDelay time.Duration
 	ctx            context.Context
-	ctxDone        bool
 
-	// create a rollup object per unique (status-code, op) pair
-	rollupsMu sync.RWMutex
-	rollups   map[string]*logRollup
+	rollups sync.Map
 }
 
 // NewRollupRouter creates a new log rollup output.
@@ -42,23 +39,20 @@ func NewRollupRouter(ctx context.Context, logger RollupLogger, reportingDelay ti
 	l := &RollupRouter{
 		logger:         logger,
 		reportingDelay: reportingDelay,
-		rollups:        map[string]*logRollup{},
+		rollups:        sync.Map{},
 		ctx:            ctx,
-		ctxDone:        false,
 	}
 	go func() {
 		<-ctx.Done()
-		l.rollupsMu.Lock()
-		l.rollups = map[string]*logRollup{}
-		l.ctxDone = true
-		l.rollupsMu.Unlock()
+		l.rollups.Clear()
 	}()
+
 	return l
 }
 
 // ShouldRollup returns true when a log msg meets the criteria for rollup.
 // In the future allow more configurability, for now default to 2xx's and < 500ms.
-func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
+func (r *RollupRouter) ShouldRollup(logmsg map[string]any) bool {
 	if _, ok := logmsg["op"].(string); !ok {
 		return false
 	}
@@ -85,9 +79,11 @@ func (r *RollupRouter) ShouldRollup(logmsg map[string]interface{}) bool {
 }
 
 // Process rolls up a log message.
-func (r *RollupRouter) Process(logmsg map[string]interface{}) {
-	if r.ctxDone {
+func (r *RollupRouter) Process(logmsg map[string]any) {
+	select {
+	case <-r.ctx.Done():
 		return
+	default:
 	}
 
 	statusCode, ok := logmsg["status-code"].(int)
@@ -102,105 +98,77 @@ func (r *RollupRouter) Process(logmsg map[string]interface{}) {
 	if !ok {
 		return
 	}
-	r.findOrCreate(statusCode, op, httpMethod).add(logmsg)
+
+	r.add(statusCode, op, httpMethod, logmsg)
 }
 
-func (r *RollupRouter) findOrCreate(statusCode int, op, method string) *logRollup {
-	rollupKey := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
+func (r *RollupRouter) add(statusCode int, op, method string, logmsg map[string]any) {
+	key := fmt.Sprintf("%d-%s-%s", statusCode, method, op)
 
-	r.rollupsMu.RLock()
-	if rollup, ok := r.rollups[rollupKey]; ok {
-		r.rollupsMu.RUnlock()
-		return rollup
+	var rollup *logRollup
+	if ru, ok := r.rollups.Load(key); ok {
+		rollup = ru.(*logRollup)
+	} else {
+		rollup = &logRollup{
+			logger:                  r.logger,
+			statusCode:              statusCode,
+			op:                      op,
+			httpMethod:              method,
+			count:                   new(int64),
+			rollupResponseTimeNsSum: new(int64),
+		}
+		go rollup.report(r.ctx, r.reportingDelay)
+
+		r.rollups.Store(key, rollup)
 	}
-	r.rollupsMu.RUnlock()
 
-	r.rollupsMu.Lock()
-	rollup := &logRollup{
-		Logger:           r.logger,
-		ReportingDelayNs: (r.reportingDelay).Nanoseconds(),
-		StatusCode:       statusCode,
-		Op:               op,
-		HTTPMethod:       method,
-	}
-	r.rollups[rollupKey] = rollup
-	r.rollupsMu.Unlock()
-
-	go rollup.schedule(r.ctx)
-	return rollup
+	atomic.AddInt64(rollup.count, 1)
+	atomic.AddInt64(rollup.rollupResponseTimeNsSum, logmsg["response-time"].(time.Duration).Nanoseconds())
 }
 
 // logRollup represents a single rollup.
 type logRollup struct {
-	Logger           RollupLogger
-	ReportingDelayNs int64
-	StatusCode       int
-	Op               string
-	HTTPMethod       string
-
-	rollupMu                sync.Mutex
-	rollupMsg               map[string]interface{}
-	count                   int64
-	rollupResponseTimeNsSum int64
+	logger                  RollupLogger
+	statusCode              int
+	op                      string
+	httpMethod              string
+	count                   *int64
+	rollupResponseTimeNsSum *int64
 }
 
-func (r *logRollup) report() {
-	r.rollupMu.Lock()
-	defer r.rollupMu.Unlock()
-	if r.rollupMsg != nil {
-		count := atomic.LoadInt64(&r.count)
-		sum := atomic.LoadInt64(&r.rollupResponseTimeNsSum) / int64(time.Millisecond)
-		r.rollupMsg["count"] = count
-		r.rollupMsg["response-time-ms-sum"] = sum
-		r.rollupMsg["response-time-ms"] = sum / count
-
-		switch logLevelFromStatus(r.StatusCode) {
-		case logger.Error:
-			r.Logger.ErrorD("request-finished-rollup", r.rollupMsg)
-		case logger.Warning:
-			r.Logger.WarnD("request-finished-rollup", r.rollupMsg)
-		default:
-			r.Logger.InfoD("request-finished-rollup", r.rollupMsg)
-		}
-		r.rollupMsg = nil
-		atomic.StoreInt64(&r.count, 0)
-		atomic.StoreInt64(&r.rollupResponseTimeNsSum, 0)
-	}
-}
-
-func (r *logRollup) schedule(ctx context.Context) {
-	lastReport := time.Now()
+func (r *logRollup) report(ctx context.Context, interval time.Duration) {
+	t := time.Tick(interval)
 	for {
-		reportingDelay := time.Duration(atomic.LoadInt64(&r.ReportingDelayNs))
-		wakeupTime := lastReport.Add(reportingDelay)
-		now := time.Now()
-		if now.After(wakeupTime) {
-			wakeupTime = now.Add(reportingDelay)
-		}
-		sleepTime := wakeupTime.Sub(now)
-
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(sleepTime):
-			lastReport = time.Now()
-			r.report()
-		}
-	}
-}
+		case <-t:
+			count := atomic.SwapInt64(r.count, 0)
+			sum := atomic.SwapInt64(r.rollupResponseTimeNsSum, 0) / int64(time.Millisecond)
 
-func (r *logRollup) add(logmsg map[string]any) {
-	atomic.AddInt64(&r.count, 1)
-	atomic.AddInt64(&r.rollupResponseTimeNsSum, logmsg["response-time"].(time.Duration).Nanoseconds())
+			if count == 0 {
+				// no logs yet so return
+				return
+			}
 
-	r.rollupMu.Lock()
-	defer r.rollupMu.Unlock()
-	if r.rollupMsg == nil {
-		r.rollupMsg = map[string]any{
-			"status-code": r.StatusCode,
-			"op":          r.Op,
-			"method":      r.HTTPMethod,
-			"via":         "kayvee-middleware",
+			msg := logger.M{
+				"status-code":          r.statusCode,
+				"op":                   r.op,
+				"method":               r.httpMethod,
+				"via":                  "kayvee-middleware",
+				"count":                count,
+				"response-time-ms-sum": sum,
+				"response-time-ms":     sum / count,
+			}
+
+			switch logLevelFromStatus(r.statusCode) {
+			case logger.Error:
+				r.logger.ErrorD("request-finished-rollup", msg)
+			case logger.Warning:
+				r.logger.WarnD("request-finished-rollup", msg)
+			default:
+				r.logger.InfoD("request-finished-rollup", msg)
+			}
 		}
 	}
 }

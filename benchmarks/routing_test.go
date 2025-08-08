@@ -11,20 +11,24 @@ import (
 )
 
 type logline struct {
-	Title string                 `json:"title"`
-	Data  map[string]interface{} `json:"data"`
+	Title string         `json:"title"`
+	Data  map[string]any `json:"data"`
 }
 
-var basicCorpus []logline
-var pathologicalCorpus []logline
-var realisticCorpus []logline
+var (
+	basicCorpus        []logline
+	pathologicalCorpus []logline
+	realisticCorpus    []logline
+)
 
-var noRouting logger.KayveeLogger
-var basicRouting logger.KayveeLogger
-var pathoRouting logger.KayveeLogger
-var realRouting logger.KayveeLogger
+var (
+	noRouting    logger.KayveeLogger
+	basicRouting logger.KayveeLogger
+	pathoRouting logger.KayveeLogger
+	realRouting  logger.KayveeLogger
+)
 
-func loadJSON(path string, o interface{}) error {
+func loadJSON(path string, o any) error {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -80,7 +84,10 @@ func init() {
 
 	// close the stderr file to avoid printing logs to the console
 	// during benchmarks
-	os.Stderr.Close()
+	err = os.Stderr.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // No routing
@@ -91,6 +98,7 @@ func BenchmarkNoRoutingWithBasicCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkNoRoutingWithPathologicalCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(pathologicalCorpus); i++ {
@@ -99,6 +107,7 @@ func BenchmarkNoRoutingWithPathologicalCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkNoRoutingWithRealisticCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(realisticCorpus); i++ {
@@ -116,6 +125,7 @@ func BenchmarkBasicRoutingWithBasicCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkBasicRoutingWithPathologicalCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(pathologicalCorpus); i++ {
@@ -124,6 +134,7 @@ func BenchmarkBasicRoutingWithPathologicalCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkBasicRoutingWithRealisticCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(realisticCorpus); i++ {
@@ -141,6 +152,7 @@ func BenchmarkPathologicalRoutingWithBasicCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkPathologicalRoutingWithPathologicalCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(pathologicalCorpus); i++ {
@@ -149,6 +161,7 @@ func BenchmarkPathologicalRoutingWithPathologicalCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkPathologicalRoutingWithRealisticCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(realisticCorpus); i++ {
@@ -166,6 +179,7 @@ func BenchmarkRealisticRoutingWithBasicCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkRealisticRoutingWithPathologicalCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(pathologicalCorpus); i++ {
@@ -174,6 +188,7 @@ func BenchmarkRealisticRoutingWithPathologicalCorpus(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkRealisticRoutingWithRealisticCorpus(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(realisticCorpus); i++ {

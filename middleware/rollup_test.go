@@ -9,9 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const reportingDelay = time.Millisecond * 5
+
 type RollupLoggerCall struct {
 	Title string
-	Data  map[string]interface{}
+	Data  map[string]any
 }
 
 type MockRollupLogger struct {
@@ -21,7 +23,7 @@ type MockRollupLogger struct {
 	warnDCalls  []RollupLoggerCall
 }
 
-func (m *MockRollupLogger) InfoD(title string, data map[string]interface{}) {
+func (m *MockRollupLogger) InfoD(title string, data map[string]any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	call := RollupLoggerCall{title, data}
@@ -38,7 +40,7 @@ func (m *MockRollupLogger) InfoDCalls() []RollupLoggerCall {
 	return calls
 }
 
-func (m *MockRollupLogger) WarnD(title string, data map[string]interface{}) {
+func (m *MockRollupLogger) WarnD(title string, data map[string]any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	call := RollupLoggerCall{title, data}
@@ -55,7 +57,7 @@ func (m *MockRollupLogger) WarnDCalls() []RollupLoggerCall {
 	return calls
 }
 
-func (m *MockRollupLogger) ErrorD(title string, data map[string]interface{}) {
+func (m *MockRollupLogger) ErrorD(title string, data map[string]any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	call := RollupLoggerCall{title, data}
@@ -74,7 +76,6 @@ func (m *MockRollupLogger) ErrorDCalls() []RollupLoggerCall {
 
 func TestProcess(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
-	reportingDelay := 1 * time.Second
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
 
 	// send a bunch of data to the rollup router in parallel (since logging can
@@ -84,7 +85,7 @@ func TestProcess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rr.Process(map[string]interface{}{
+			rr.Process(map[string]any{
 				"status-code":   200,
 				"op":            "healthCheck",
 				"method":        "GET",
@@ -95,12 +96,12 @@ func TestProcess(t *testing.T) {
 	wg.Wait()
 
 	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + 500*time.Millisecond)
+	time.Sleep(reportingDelay + 10*time.Millisecond)
 
 	assert.Equal(t, mockLogger.InfoDCalls(), []RollupLoggerCall{
 		{
 			Title: "request-finished-rollup",
-			Data: map[string]interface{}{
+			Data: map[string]any{
 				"count":                int64(100),
 				"op":                   "healthCheck",
 				"method":               "GET",
@@ -115,7 +116,6 @@ func TestProcess(t *testing.T) {
 
 func TestSameOp2xx(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
-	reportingDelay := 1 * time.Second
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
 
 	// send a bunch of data to the rollup router in parallel (since logging can
@@ -126,7 +126,7 @@ func TestSameOp2xx(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rr.Process(map[string]interface{}{
+			rr.Process(map[string]any{
 				"status-code":   200,
 				"op":            "healthCheck",
 				"method":        "GET",
@@ -138,7 +138,7 @@ func TestSameOp2xx(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rr.Process(map[string]interface{}{
+			rr.Process(map[string]any{
 				"status-code":   201,
 				"op":            "healthCheck",
 				"method":        "GET",
@@ -149,10 +149,10 @@ func TestSameOp2xx(t *testing.T) {
 	wg.Wait()
 
 	// check in shortly after reporting delay
-	time.Sleep(reportingDelay + 500*time.Millisecond)
+	time.Sleep(reportingDelay + 10*time.Millisecond)
 	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
 		Title: "request-finished-rollup",
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"count":                int64(50),
 			"op":                   "healthCheck",
 			"method":               "GET",
@@ -165,7 +165,7 @@ func TestSameOp2xx(t *testing.T) {
 
 	assert.Contains(t, mockLogger.InfoDCalls(), RollupLoggerCall{
 		Title: "request-finished-rollup",
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"count":                int64(50),
 			"op":                   "healthCheck",
 			"method":               "GET",
@@ -179,25 +179,24 @@ func TestSameOp2xx(t *testing.T) {
 
 func TestShouldRollup(t *testing.T) {
 	mockLogger := &MockRollupLogger{}
-	reportingDelay := 1 * time.Second
 	rr := NewRollupRouter(context.Background(), mockLogger, reportingDelay)
 
 	// if a request is a 200 or is too slow, it should not get rolled up
 	// additionally, there needs to be an "op" field
-	for _, falseyInput := range []map[string]interface{}{
-		map[string]interface{}{
+	for _, falseyInput := range []map[string]any{
+		{
 			"status-code":   200,
 			"op":            "getApps",
 			"method":        "GET",
 			"response-time": 600 * time.Millisecond, // too slow
 		},
-		map[string]interface{}{
+		{
 			"status-code":   500, // not a 200
 			"op":            "getApps",
 			"method":        "GET",
 			"response-time": 100 * time.Millisecond,
 		},
-		map[string]interface{}{
+		{
 			"status-code": 200,
 			// no "op" or "method" field
 			"response-time": 50 * time.Millisecond,
@@ -207,14 +206,14 @@ func TestShouldRollup(t *testing.T) {
 	}
 
 	// 2xxs that are fast enough should get rolled up
-	for _, truthyInput := range []map[string]interface{}{
-		map[string]interface{}{
+	for _, truthyInput := range []map[string]any{
+		{
 			"status-code":   200,
 			"op":            "getAppByID",
 			"method":        "GET",
 			"response-time": 100 * time.Millisecond,
 		},
-		map[string]interface{}{
+		{
 			"status-code":   201,
 			"op":            "getAdminByID",
 			"method":        "GET",
