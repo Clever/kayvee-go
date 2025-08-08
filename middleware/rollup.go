@@ -113,6 +113,7 @@ func (r *RollupRouter) add(statusCode int, op, method string, logmsg map[string]
 	})
 
 	ru := rollup.(*logRollup)
+	// If this is a new key then kick off the reporting goroutine
 	if !ok {
 		go ru.report(r.ctx, r.reportingDelay)
 	}
