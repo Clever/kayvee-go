@@ -31,5 +31,6 @@ jobs:
         paths: "."
     - clone-ci-scripts
     - run: cd ~/go/src/github.com/Clever/kayvee-go
-    - run: if [ "${CIRCLE_BRANCH}" == "master" ]; then $HOME/ci-scripts/circleci/github-release $GH_RELEASE_TOKEN; fi;
+    - run: $HOME/ci-scripts/circleci/github-release --pre-release $GH_RELEASE_TOKEN
+    # - run: if [ "${CIRCLE_BRANCH}" == "master" ]; then $HOME/ci-scripts/circleci/github-release $GH_RELEASE_TOKEN; fi;
 
