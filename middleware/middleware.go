@@ -9,6 +9,7 @@ Package middleware provides a customizable Kayvee logging middleware for HTTP se
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -76,7 +77,9 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		lggr.InfoD("request-finished", data)
 	}
 
-	lggr.Close()
+	if err := lggr.Close(); err != nil {
+		log.Println("ERROR: couldn't release logger resources:", err)
+	}
 }
 
 func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]any) map[string]any {
