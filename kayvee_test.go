@@ -20,8 +20,6 @@ type TestSpec struct {
 	Output string         `json:"output"`
 }
 
-type keyVal map[string]any
-
 // takes two strings (which are assumed to be JSON)
 func compareJSONStrings(t *testing.T, expected string, actual string) {
 	actualJSON := map[string]any{}
