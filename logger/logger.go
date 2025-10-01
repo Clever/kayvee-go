@@ -101,7 +101,7 @@ type Logger struct {
 	fLogger       formatLogger
 	logRouter     router.Router
 	metricsOutput metricsOutput
-	buf           *BufferedWriter
+	buf           *bufferedWriter
 }
 
 var globalRouter router.Router
@@ -187,17 +187,20 @@ func (l *Logger) SetOutput(output io.Writer) {
 }
 
 // Flush ensures all buffered log output is written.
-func (l *Logger) Flush() {
-	l.flush()
+func (l *Logger) Flush() error {
+	if l.buf != nil {
+		return l.buf.flush()
+	}
+	return nil
 }
 
-func (l *Logger) flush() {
+// Close ensures all buffered log output is written and releases any
+// resources.
+func (l *Logger) Close() error {
 	if l.buf != nil {
-		err := l.buf.Flush() // Flush buffered output
-		if err != nil {
-			log.Printf("ERROR: Failed to flush log buffer: %v\n", err)
-		}
+		return l.buf.stop()
 	}
+	return nil
 }
 
 func (l *Logger) setFormatLogger(fl formatLogger) {
@@ -462,14 +465,11 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 		ctx["pod-account"] = os.Getenv("_POD_ACCOUNT")
 	}
 	logObj := Logger{
-		globals: ctx,
-		buf:     &BufferedWriter{Out: os.Stderr}, // Default buffered writer
+		globals:       ctx,
+		buf:           &bufferedWriter{out: os.Stderr}, // Default buffered writer
+		fLogger:       &defaultFormatLogger{},
+		metricsOutput: logMetrics, // Default metrics output
 	}
-
-	logObj.metricsOutput = logMetrics
-
-	fl := defaultFormatLogger{}
-	logObj.fLogger = &fl
 
 	var logLvl LogLevel
 	strLogLvl := os.Getenv("KAYVEE_LOG_LEVEL")
@@ -483,15 +483,6 @@ func NewConcreteLoggerWithContext(source string, contextValues M) *Logger {
 			}
 		}
 	}
-
-	// Start periodic flush (every 30 second)
-	tic := time.NewTicker(30 * time.Second)
-	go func() {
-		for range tic.C {
-			logObj.flush()
-		}
-	}()
-
 	logObj.SetConfig(source, logLvl, kv.Format, logObj.buf)
 
 	return &logObj

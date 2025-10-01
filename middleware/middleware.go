@@ -15,8 +15,8 @@ import (
 	"github.com/Clever/kayvee-go/v7/logger"
 )
 
-var defaultHandler = func(req *http.Request) map[string]interface{} {
-	data := map[string]interface{}{
+var defaultHandler = func(req *http.Request) map[string]any {
+	data := map[string]any{
 		"method": req.Method,
 		"path":   req.URL.Path,
 		"params": req.URL.RawQuery,
@@ -32,7 +32,7 @@ var defaultHandler = func(req *http.Request) map[string]interface{} {
 }
 
 type logHandler struct {
-	handlers []func(req *http.Request) map[string]interface{}
+	handlers []func(req *http.Request) map[string]any
 	h        http.Handler
 	source   string
 }
@@ -41,7 +41,7 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 
 	// create and inject a logger into req.Context
-	lggr := logger.New(l.source)
+	lggr := logger.NewConcreteLogger(l.source)
 	req = req.WithContext(logger.NewContext(req.Context(), lggr))
 
 	lrw := &loggedResponseWriter{
@@ -52,7 +52,7 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	l.h.ServeHTTP(lrw, req)
 	duration := time.Since(start)
 
-	data := l.applyHandlers(req, map[string]interface{}{
+	data := l.applyHandlers(req, map[string]any{
 		"response-time":    duration,
 		"response-time-ms": duration.Nanoseconds() / int64(time.Millisecond),
 		"count":            1, // this makes aggregating single logs with rollup logs easier
@@ -75,11 +75,13 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	default:
 		lggr.InfoD("request-finished", data)
 	}
+
+	lggr.Close()
 }
 
-func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]interface{}) map[string]interface{} {
-	result := map[string]interface{}{}
-	writeData := func(data map[string]interface{}) {
+func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]any) map[string]any {
+	result := map[string]any{}
+	writeData := func(data map[string]any) {
 		for key, val := range data {
 			result[key] = val
 		}
@@ -98,7 +100,7 @@ func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 // New takes in an http Handler to wrap with logging, the logger source name to use, and any amount of
 // optional handlers to customize the data that's logged.
 // On every request, the middleware will create a logger and place it in req.Context().
-func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
+func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]any) http.Handler {
 	return &logHandler{
 		handlers: handlers,
 		h:        h,
@@ -107,9 +109,9 @@ func New(h http.Handler, source string, handlers ...func(*http.Request) map[stri
 }
 
 // HeaderHandler takes in any amount of headers and returns a handler that adds those headers.
-func HeaderHandler(headers ...string) func(*http.Request) map[string]interface{} {
-	return func(req *http.Request) map[string]interface{} {
-		result := map[string]interface{}{}
+func HeaderHandler(headers ...string) func(*http.Request) map[string]any {
+	return func(req *http.Request) map[string]any {
+		result := map[string]any{}
 		for _, header := range headers {
 			if val := req.Header.Get(header); val != "" {
 				result[header] = val
