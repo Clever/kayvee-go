@@ -14,7 +14,6 @@ import (
 
 // KayveeLogger is the main logging interface, providing customization of log messages.
 type KayveeLogger interface {
-
 	//
 	// Configuration
 	//
@@ -23,7 +22,7 @@ type KayveeLogger interface {
 	AddContext(key, val string)
 
 	// GetContext reads a key-val from the global map of data that will be logged with all log messages.
-	GetContext(key string) (interface{}, bool)
+	GetContext(key string) (any, bool)
 
 	// SetConfig allows configuration changes in one go
 	SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer)
@@ -52,59 +51,59 @@ type KayveeLogger interface {
 	Counter(title string)
 
 	// CounterD takes a string, value, and data map. It logs with LogLevel = Info
-	CounterD(title string, value int, data map[string]interface{})
+	CounterD(title string, value int, data map[string]any)
 
 	// Critical takes a string and logs with LogLevel = Critical
 	Critical(title string)
 
 	// CriticalD takes a string and data map. It logs with LogLevel = Critical
-	CriticalD(title string, data map[string]interface{})
+	CriticalD(title string, data map[string]any)
 
 	// Trace takes a string and logs with LogLevel = Trace
 	Trace(title string)
 
 	// TraceD takes a string and data map. It logs with LogLevel = Trace
-	TraceD(title string, data map[string]interface{})
+	TraceD(title string, data map[string]any)
 
 	// Debug takes a string and logs with LogLevel = Debug
 	Debug(title string)
 
 	// DebugD takes a string and data map. It logs with LogLevel = Debug
-	DebugD(title string, data map[string]interface{})
+	DebugD(title string, data map[string]any)
 
 	// Error takes a string and logs with LogLevel = Error
 	Error(title string)
 
 	// ErrorD takes a string and data map. It logs with LogLevel = Error
-	ErrorD(title string, data map[string]interface{})
+	ErrorD(title string, data map[string]any)
 
 	// GaugeFloat takes a string and float value. It logs with LogLevel = Info
 	GaugeFloat(title string, value float64)
 
 	// GaugeFloatD takes a string, a float value, and data map. It logs with LogLevel = Info
-	GaugeFloatD(title string, value float64, data map[string]interface{})
+	GaugeFloatD(title string, value float64, data map[string]any)
 
 	// GaugeInt takes a string and integer value. It logs with LogLevel = Info
 	GaugeInt(title string, value int)
 
 	// GaugeIntD takes a string, an integer value, and data map. It logs with LogLevel = Info
-	GaugeIntD(title string, value int, data map[string]interface{})
+	GaugeIntD(title string, value int, data map[string]any)
 
 	// Info takes a string and logs with LogLevel = Info
 	Info(title string)
 
 	// InfoD takes a string and data map. It logs with LogLevel = Info
-	InfoD(title string, data map[string]interface{})
+	InfoD(title string, data map[string]any)
 
 	// Timer takes a string and logs with LogLevel = Debug
 	Timer(title string) *Timer
 
 	// TimerD takes a string and data map. It logs with LogLevel = Debug
-	TimerD(title string, data map[string]interface{}) *Timer
+	TimerD(title string, data map[string]any) *Timer
 
 	// Warn takes a string and logs with LogLevel = Warning
 	Warn(title string)
 
 	// WarnD takes a string and data map. It logs with LogLevel = Warning
-	WarnD(title string, data map[string]interface{})
+	WarnD(title string, data map[string]any)
 }

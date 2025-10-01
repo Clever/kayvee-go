@@ -11,11 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
+
+	"github.com/Clever/kayvee-go/v7/logger"
 )
 
 //go:generate mockgen -package $GOPACKAGE -source kinesisstreamlogger.go -destination mock_kinesis.go KinesisClient
@@ -39,8 +40,10 @@ type Logger struct {
 	sendBatchWG     sync.WaitGroup
 }
 
-var _ logger.KayveeLogger = &Logger{}
-var _ io.WriteCloser = &Logger{}
+var (
+	_ logger.KayveeLogger = &Logger{}
+	_ io.WriteCloser      = &Logger{}
+)
 
 var ignoredFields = []string{"level", "source", "title", "deploy_env", "wf_id"}
 
@@ -159,7 +162,7 @@ func New(c Config) (*Logger, error) {
 
 // Write a log.
 func (ksl *Logger) Write(bs []byte) (int, error) {
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(bs, &m); err != nil {
 		return 0, err
 	}

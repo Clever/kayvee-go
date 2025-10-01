@@ -60,7 +60,7 @@ const (
 )
 
 // Format converts a map to a string of space-delimited key=val pairs
-func Format(data map[string]interface{}) string {
+func Format(data map[string]any) string {
 	if deployEnv != "" {
 		data["deploy_env"] = deployEnv
 	}
@@ -93,9 +93,9 @@ func Format(data map[string]interface{}) string {
 }
 
 // FormatLog is similar to Format, but takes additional reserved params to promote logging best-practices
-func FormatLog(source string, level LogLevel, title string, data map[string]interface{}) string {
+func FormatLog(source string, level LogLevel, title string, data map[string]any) string {
 	if data == nil {
-		data = make(map[string]interface{})
+		data = make(map[string]any)
 	}
 	data["source"] = source
 	data["level"] = level
@@ -105,7 +105,7 @@ func FormatLog(source string, level LogLevel, title string, data map[string]inte
 
 // Logger is an interface satisfied by all loggers that use kayvee to Log results
 type Logger interface {
-	Info(title string, data map[string]interface{})
-	Warning(title string, data map[string]interface{})
-	Error(title string, data map[string]interface{}, err error)
+	Info(title string, data map[string]any)
+	Warning(title string, data map[string]any)
+	Error(title string, data map[string]any, err error)
 }

@@ -8,14 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type SortableOutputs []map[string]interface{}
+type SortableOutputs []map[string]any
 
 func (r SortableOutputs) Len() int {
 	return len(r)
 }
+
 func (r SortableOutputs) Less(i, j int) bool {
 	return r[i]["rule"].(string) < r[j]["rule"].(string)
 }
+
 func (r SortableOutputs) Swap(i, j int) {
 	tmp := r[j]
 	r[j] = r[i]
@@ -30,23 +32,23 @@ func TestMatchesSimple(t *testing.T) {
 		},
 		Output: RuleOutput{},
 	}
-	msg0 := map[string]interface{}{
+	msg0 := map[string]any{
 		"title": "hello",
 		"foo":   "bar",
 	}
-	msg1 := map[string]interface{}{
+	msg1 := map[string]any{
 		"title": "hi",
 		"foo":   "bar",
 	}
-	msg2 := map[string]interface{}{
+	msg2 := map[string]any{
 		"title": "hi",
 		"foo":   "fighters",
 	}
-	msg3 := map[string]interface{}{
+	msg3 := map[string]any{
 		"title": "howdy",
 		"foo":   "bar",
 	}
-	msg4 := map[string]interface{}{
+	msg4 := map[string]any{
 		"missing-stuff": "indeed",
 	}
 	assert.True(t, r.Matches(msg0))
@@ -63,33 +65,33 @@ func TestMatchesNested(t *testing.T) {
 		},
 		Output: RuleOutput{},
 	}
-	msg0 := map[string]interface{}{
+	msg0 := map[string]any{
 		"title": "greeting",
-		"foo": map[string]interface{}{
+		"foo": map[string]any{
 			"bar": "hello",
 		},
 	}
-	msg1 := map[string]interface{}{
+	msg1 := map[string]any{
 		"title": "greeting",
-		"foo": map[string]interface{}{
+		"foo": map[string]any{
 			"bar": "hi",
 		},
 	}
-	msg2 := map[string]interface{}{
+	msg2 := map[string]any{
 		"title": "greeting",
-		"foo": map[string]interface{}{
+		"foo": map[string]any{
 			"bar": "howdy",
 		},
 	}
-	msg3 := map[string]interface{}{
+	msg3 := map[string]any{
 		"title": "greeting",
-		"foo": map[string]interface{}{
+		"foo": map[string]any{
 			"baz": "howdy",
 		},
 	}
-	msg4 := map[string]interface{}{
+	msg4 := map[string]any{
 		"title": "greeting",
-		"boo": map[string]interface{}{
+		"boo": map[string]any{
 			"bar": "howdy",
 		},
 	}
@@ -109,28 +111,28 @@ func TestWildcardMatches(t *testing.T) {
 
 	tests := []struct {
 		Description string
-		Message     map[string]interface{}
+		Message     map[string]any
 		DoesMatch   bool
 	}{
 		{
 			Description: "Matches any bool",
-			Message:     map[string]interface{}{"any": false},
+			Message:     map[string]any{"any": false},
 			DoesMatch:   true,
 		},
 		{
 			Description: "Matches any number",
-			Message:     map[string]interface{}{"any": 5},
+			Message:     map[string]any{"any": 5},
 			DoesMatch:   true,
 		},
 		{
 			Description: "Matches any string",
-			Message:     map[string]interface{}{"any": "hello"},
+			Message:     map[string]any{"any": "hello"},
 			DoesMatch:   true,
 		},
 		{
 			Description: "Matches any object",
-			Message: map[string]interface{}{
-				"any": map[string]interface{}{
+			Message: map[string]any{
+				"any": map[string]any{
 					"baz": "howdy",
 				},
 			},
@@ -138,19 +140,19 @@ func TestWildcardMatches(t *testing.T) {
 		},
 		{
 			Description: "Does not matches empty string",
-			Message:     map[string]interface{}{"any": ""},
+			Message:     map[string]any{"any": ""},
 			DoesMatch:   false,
 		},
 		{
 			Description: "Does not matches nil",
-			Message:     map[string]interface{}{"any": nil},
+			Message:     map[string]any{"any": nil},
 			DoesMatch:   false,
 		},
 		{
 			Description: "Does not match message without correct field",
-			Message: map[string]interface{}{
+			Message: map[string]any{
 				"title": "greeting",
-				"boo": map[string]interface{}{
+				"boo": map[string]any{
 					"bar": "howdy",
 				},
 			},
@@ -176,27 +178,27 @@ func TestBooleanMatches(t *testing.T) {
 
 	tests := []struct {
 		Description string
-		Message     map[string]interface{}
+		Message     map[string]any
 		DoesMatch   bool
 	}{
 		{
 			Description: "Simple match",
-			Message:     map[string]interface{}{"bull": true},
+			Message:     map[string]any{"bull": true},
 			DoesMatch:   true,
 		},
 		{
 			Description: "Match with multiple fields",
-			Message:     map[string]interface{}{"any": false, "bull": true},
+			Message:     map[string]any{"any": false, "bull": true},
 			DoesMatch:   true,
 		},
 		{
 			Description: "Bool that doesn't match",
-			Message:     map[string]interface{}{"bull": false},
+			Message:     map[string]any{"bull": false},
 			DoesMatch:   false,
 		},
 		{
 			Description: "Messsge that doesn't have correct field",
-			Message: map[string]interface{}{
+			Message: map[string]any{
 				"title": "greeting",
 				"foo":   map[string]string{"bar": "howdy"},
 			},
@@ -224,7 +226,7 @@ func TestSubstitution(t *testing.T) {
 				"%{a-bool}, %{a-float32}, %{a-float64}, %{a-string}, %{an-error}, %{bar}",
 		},
 	}
-	msg := map[string]interface{}{
+	msg := map[string]any{
 		"title":     "greeting",
 		"foo":       "partner",
 		"an-int":    int(100),
@@ -235,11 +237,11 @@ func TestSubstitution(t *testing.T) {
 		"a-float32": float32(12.3456),
 		"a-float64": float64(120.3456),
 		"an-error":  fmt.Errorf("from-error"),
-		"bar": map[string]interface{}{
+		"bar": map[string]any{
 			"baz": "nest egg",
 		},
 	}
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"rule":       "myrule",
 		"channel":    "#-partner-",
 		"dimensions": []string{"-partner-", "-nest egg-"},
@@ -251,7 +253,7 @@ func TestSubstitution(t *testing.T) {
 
 func TestRoute(t *testing.T) {
 	router := RuleRouter{rules: []Rule{
-		Rule{
+		{
 			Name: "rule-one",
 			Matchers: RuleMatchers{
 				"title": []string{"hello", "hi"},
@@ -262,7 +264,7 @@ func TestRoute(t *testing.T) {
 				"dimensions": []string{"-%{foo}-"},
 			},
 		},
-		Rule{
+		{
 			Name: "rule-two",
 			Matchers: RuleMatchers{
 				"bing.bong": []string{"buzz"},
@@ -273,54 +275,54 @@ func TestRoute(t *testing.T) {
 		},
 	}}
 
-	msg0 := map[string]interface{}{
+	msg0 := map[string]any{
 		"title": "hi",
 		"foo":   "bar",
 	}
-	expected0 := []map[string]interface{}{
-		map[string]interface{}{
+	expected0 := []map[string]any{
+		{
 			"rule":       "rule-one",
 			"channel":    "#-bar-",
 			"dimensions": []string{"-bar-"},
 		},
 	}
-	actual0 := router.Route(msg0)["routes"].([]map[string]interface{})
+	actual0 := router.Route(msg0)["routes"].([]map[string]any)
 	assert.Equal(t, expected0, actual0)
 
-	msg1 := map[string]interface{}{
+	msg1 := map[string]any{
 		"title": "hi",
-		"bing": map[string]interface{}{
+		"bing": map[string]any{
 			"bong": "buzz",
 		},
 	}
-	expected1 := []map[string]interface{}{
-		map[string]interface{}{
+	expected1 := []map[string]any{
+		{
 			"rule":   "rule-two",
 			"series": "x",
 		},
 	}
-	actual1 := router.Route(msg1)["routes"].([]map[string]interface{})
+	actual1 := router.Route(msg1)["routes"].([]map[string]any)
 	assert.Equal(t, expected1, actual1)
 
-	msg2 := map[string]interface{}{
+	msg2 := map[string]any{
 		"title": "hello",
 		"foo":   "baz",
-		"bing": map[string]interface{}{
+		"bing": map[string]any{
 			"bong": "buzz",
 		},
 	}
-	expected2 := SortableOutputs([]map[string]interface{}{
-		map[string]interface{}{
+	expected2 := SortableOutputs([]map[string]any{
+		{
 			"rule":       "rule-one",
 			"channel":    "#-baz-",
 			"dimensions": []string{"-baz-"},
 		},
-		map[string]interface{}{
+		{
 			"rule":   "rule-two",
 			"series": "x",
 		},
 	})
-	actual2 := SortableOutputs(router.Route(msg2)["routes"].([]map[string]interface{}))
+	actual2 := SortableOutputs(router.Route(msg2)["routes"].([]map[string]any))
 	sort.Sort(expected2)
 	sort.Sort(actual2)
 	assert.Equal(t, expected2, actual2)

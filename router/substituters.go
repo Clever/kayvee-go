@@ -8,16 +8,18 @@ import (
 	"strings"
 )
 
-var envvarTokens = regexp.MustCompile(`\$\{.+?\}`)
-var fieldTokens = regexp.MustCompile(`%\{.+?\}`)
+var (
+	envvarTokens = regexp.MustCompile(`\$\{.+?\}`)
+	fieldTokens  = regexp.MustCompile(`%\{.+?\}`)
+)
 
 // substitute performs a key-value substitution on `obj`, replacing instances
 // of tokenMatcher in the keys or values of `obj` with `replacer(name)`. It
 // returns the substituted map and does not modify the input map.
 func substitute(
-	obj map[string]interface{}, tokenMatcher *regexp.Regexp, replacer func(key string) string,
-) map[string]interface{} {
-	newObj := make(map[string]interface{})
+	obj map[string]any, tokenMatcher *regexp.Regexp, replacer func(key string) string,
+) map[string]any {
+	newObj := make(map[string]any)
 	for k, v := range obj {
 		switch v := v.(type) {
 		case string:
@@ -38,7 +40,7 @@ func substitute(
 // substituteEnvVars performs a key-value substitutions on `data`.  Substituations have the
 // following format: `${ENV_VAR_NAME}`.  Keys are replaced with the corresponding env-var
 // value.  An error is returned if an env-var is not found.
-func substituteEnvVars(data map[string]interface{}) (map[string]interface{}, error) {
+func substituteEnvVars(data map[string]any) (map[string]any, error) {
 	envErrors := []string{}
 	getEnvOrErr := func(key string) string {
 		// Performance optimization: slice sub-sequence is faster than regex.FindStringSubmatch
@@ -64,8 +66,8 @@ func substituteEnvVars(data map[string]interface{}) (map[string]interface{}, err
 // by the `lookup` function.  If lookup doesn't return a value, the text "KEY_NOT_FOUND" is
 // used instead.
 func substituteFields(
-	data map[string]interface{}, lookup func(string) (interface{}, bool),
-) map[string]interface{} {
+	data map[string]any, lookup func(string) (any, bool),
+) map[string]any {
 	kvSubber := func(key string) string {
 		// Performance optimization: slice sub-sequence is faster than regex.FindStringSubmatch
 		key = key[2 : len(key)-1]

@@ -20,7 +20,7 @@ func init() {
 	}
 }
 
-func setDefaults(output map[string]interface{}) map[string]interface{} {
+func setDefaults(output map[string]any) map[string]any {
 	otype, ok := output["type"].(string)
 	if !ok {
 		return output
@@ -41,14 +41,14 @@ func setDefaults(output map[string]interface{}) map[string]interface{} {
 // Route returns routing metadata for the log line `msg`. The outputs (with
 // variable substitutions performed) for each rule matched are placed under the
 // "routes" key.
-func (r *RuleRouter) Route(msg map[string]interface{}) map[string]interface{} {
-	outputs := []map[string]interface{}{}
+func (r *RuleRouter) Route(msg map[string]any) map[string]any {
+	outputs := []map[string]any{}
 	for _, rule := range r.rules {
 		if rule.Matches(msg) {
 			outputs = append(outputs, rule.OutputFor(msg))
 		}
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"team":        teamName,
 		"kv_version":  kv.Version,
 		"kv_language": "go",

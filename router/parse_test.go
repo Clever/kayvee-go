@@ -14,9 +14,11 @@ type SortableRules []Rule
 func (r SortableRules) Len() int {
 	return len(r)
 }
+
 func (r SortableRules) Less(i, j int) bool {
 	return r[i].Name < r[j].Name
 }
+
 func (r SortableRules) Swap(i, j int) {
 	tmp := r[j]
 	r[j] = r[i]
@@ -94,7 +96,7 @@ routes:
 			Output: RuleOutput{
 				"type":        "alerts",
 				"series":      "other-series",
-				"dimensions":  []interface{}{"baz"},
+				"dimensions":  []any{"baz"},
 				"stat_type":   "gauge",
 				"value_field": "value",
 			},
@@ -108,7 +110,7 @@ routes:
 			Output: RuleOutput{
 				"type":        "alerts",
 				"series":      "other-series",
-				"dimensions":  []interface{}{"baz"},
+				"dimensions":  []any{"baz"},
 				"stat_type":   "counter",
 				"value_field": "hello",
 			},
@@ -122,7 +124,7 @@ routes:
 			Output: RuleOutput{
 				"type":        "alerts",
 				"series":      "other-series",
-				"dimensions":  []interface{}{},
+				"dimensions":  []any{},
 				"stat_type":   "counter",
 				"value_field": "value",
 			},
@@ -136,7 +138,7 @@ routes:
 			Output: RuleOutput{
 				"type":        "alerts",
 				"series":      "other-series",
-				"dimensions":  []interface{}{},
+				"dimensions":  []any{},
 				"stat_type":   "gauge",
 				"value_field": "value",
 			},

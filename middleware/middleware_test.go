@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/Clever/kayvee-go/v7/logger"
-	"github.com/stretchr/testify/assert"
 )
 
 type bufferWriter struct {
@@ -33,7 +34,7 @@ func TestMiddleware(t *testing.T) {
 		handler        func(http.ResponseWriter, *http.Request)
 		expectedSize   int
 		expectedStatus int
-		expectedLog    map[string]interface{}
+		expectedLog    map[string]any
 	}{
 		{
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func TestMiddleware(t *testing.T) {
 				w.Write(make([]byte, 5, 5))
 			},
 			// Only the logs that vary based on the handler, the rest are tested in the test runner
-			expectedLog: map[string]interface{}{
+			expectedLog: map[string]any{
 				"level": "info",
 				// Floats because json decoding treats all numbers as floats
 				"response-size": 15.0,
@@ -51,7 +52,7 @@ func TestMiddleware(t *testing.T) {
 		{
 			// Empty handler is totally valid and should send back 200 with a response size of 0
 			handler: func(w http.ResponseWriter, r *http.Request) {},
-			expectedLog: map[string]interface{}{
+			expectedLog: map[string]any{
 				"level":         "info",
 				"response-size": 0.0,
 				"status-code":   200.0,
@@ -61,7 +62,7 @@ func TestMiddleware(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(403)
 			},
-			expectedLog: map[string]interface{}{
+			expectedLog: map[string]any{
 				"level":         "warning",
 				"response-size": 0.0,
 				"status-code":   403.0,
@@ -71,7 +72,7 @@ func TestMiddleware(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(500)
 			},
-			expectedLog: map[string]interface{}{
+			expectedLog: map[string]any{
 				"level":         "error",
 				"response-size": 0.0,
 				"status-code":   500.0,
@@ -97,7 +98,7 @@ func TestMiddleware(t *testing.T) {
 			Header: http.Header{"X-Forwarded-For": {"192.168.0.1"}},
 		})
 
-		var result map[string]interface{}
+		var result map[string]any
 		assert.Nil(json.NewDecoder(out).Decode(&result))
 
 		// response-time changes each run, so just check that it's more than zero
@@ -150,7 +151,7 @@ func TestMiddlewareIsAddedToContext(t *testing.T) {
 	if len(logLines) != 3 /* one extra blank "line" from trailing newline */ {
 		t.Fatalf("expected 2 logs, got %d: %#v", len(logLines)-1, logLines)
 	}
-	var result map[string]interface{}
+	var result map[string]any
 	assert.Nil(json.NewDecoder(strings.NewReader(logLines[0])).Decode(&result))
 
 	if result["title"].(string) != "logging with context!" {

@@ -15,17 +15,17 @@ type Tests struct {
 }
 
 type TestSpec struct {
-	Title  string                 `json:"title"`
-	Input  map[string]interface{} `json:"input"`
-	Output string                 `json:"output"`
+	Title  string         `json:"title"`
+	Input  map[string]any `json:"input"`
+	Output string         `json:"output"`
 }
 
-type keyVal map[string]interface{}
+type keyVal map[string]any
 
 // takes two strings (which are assumed to be JSON)
 func compareJSONStrings(t *testing.T, expected string, actual string) {
-	actualJSON := map[string]interface{}{}
-	expectedJSON := map[string]interface{}{}
+	actualJSON := map[string]any{}
+	expectedJSON := map[string]any{}
 	err := json.Unmarshal([]byte(actual), &actualJSON)
 	if err != nil {
 		t.Fatalf("failed to json unmarshal `actual`: %s", actual)
@@ -50,7 +50,7 @@ func Test_KayveeSpecs(t *testing.T) {
 
 	for _, spec := range tests.FormatTests {
 		expected := spec.Output
-		actual := Format(spec.Input["data"].(map[string]interface{}))
+		actual := Format(spec.Input["data"].(map[string]any))
 		compareJSONStrings(t, expected, actual)
 	}
 
@@ -61,7 +61,7 @@ func Test_KayveeSpecs(t *testing.T) {
 		source, _ := spec.Input["source"].(string)
 		level, _ := spec.Input["level"].(string)
 		title, _ := spec.Input["title"].(string)
-		data, _ := spec.Input["data"].(map[string]interface{})
+		data, _ := spec.Input["data"].(map[string]any)
 		loglevel := LogLevel(level)
 		actual := FormatLog(source, loglevel, title, data)
 
@@ -76,7 +76,7 @@ type X struct {
 
 func Test_MapWithInterfaceWithFunctionField(t *testing.T) {
 	x := &X{A: "TEST"}
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	data["pointer"] = x
 	data["x"] = *x
 

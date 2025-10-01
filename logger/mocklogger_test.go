@@ -3,8 +3,9 @@ package logger
 import (
 	"testing"
 
-	router "github.com/Clever/kayvee-go/v7/router"
 	"github.com/stretchr/testify/assert"
+
+	router "github.com/Clever/kayvee-go/v7/router"
 )
 
 func TestMockLoggerImplementsKayveeLogger(t *testing.T) {

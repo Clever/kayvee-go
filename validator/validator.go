@@ -66,7 +66,7 @@ func (e *MissingRequiredFieldError) Error() string {
 // invalid value.
 type InvalidValueError struct {
 	Field string
-	Value interface{}
+	Value any
 }
 
 func (e *InvalidValueError) Error() string {
@@ -91,7 +91,7 @@ func (e *InvalidValueTypeError) Error() string {
 // ValidateJSONFormat returns a errors if the given string is not a valid
 // JSON-formatted kayvee log line.
 func ValidateJSONFormat(logLine string) error {
-	var kayveeData map[string]interface{}
+	var kayveeData map[string]any
 
 	err := json.Unmarshal([]byte(strings.TrimSpace(logLine)), &kayveeData)
 	if err != nil {
@@ -101,7 +101,7 @@ func ValidateJSONFormat(logLine string) error {
 	return validateKayveeData(kayveeData)
 }
 
-func validateKayveeData(kayveeData map[string]interface{}) error {
+func validateKayveeData(kayveeData map[string]any) error {
 	for field, value := range kayveeData {
 		switch expectedValueTypes[field] {
 		case StringType:

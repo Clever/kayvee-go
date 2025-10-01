@@ -7,15 +7,16 @@ import (
 	"regexp"
 	"testing"
 
-	kv "github.com/Clever/kayvee-go/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kv "github.com/Clever/kayvee-go/v7"
 )
 
 // takes two strings (which are assumed to be JSON)
 func compareJSONStrings(t *testing.T, expected string, actual string) {
-	actualJSON := map[string]interface{}{}
-	expectedJSON := map[string]interface{}{}
+	actualJSON := map[string]any{}
+	expectedJSON := map[string]any{}
 	err := json.Unmarshal([]byte(actual), &actualJSON)
 	if err != nil {
 		panic(fmt.Sprint("failed to json unmarshal `actual`:", actual))
@@ -44,11 +45,11 @@ func TestLogTrace(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Trace("testlogTrace")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.Format(
-		map[string]interface{}{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace"}))
+		map[string]any{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace"}))
 	buf.Reset()
-	logger.TraceD("testlogTrace", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.TraceD("testlogTrace", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.Format(
-		map[string]interface{}{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace", "key1": "val1", "key2": "val2"}))
+		map[string]any{"source": "logger-tester", "level": Trace.String(), "title": "testlogTrace", "key1": "val1", "key2": "val2"}))
 }
 
 func TestLogDebug(t *testing.T) {
@@ -57,11 +58,11 @@ func TestLogDebug(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Debug("testlogdebug")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.Format(
-		map[string]interface{}{"source": "logger-tester", "level": Debug.String(), "title": "testlogdebug"}))
+		map[string]any{"source": "logger-tester", "level": Debug.String(), "title": "testlogdebug"}))
 	buf.Reset()
-	logger.DebugD("testlogdebug", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.DebugD("testlogdebug", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.Format(
-		map[string]interface{}{"source": "logger-tester", "level": Debug.String(), "title": "testlogdebug", "key1": "val1", "key2": "val2"}))
+		map[string]any{"source": "logger-tester", "level": Debug.String(), "title": "testlogdebug", "key1": "val1", "key2": "val2"}))
 }
 
 func TestLogInfo(t *testing.T) {
@@ -70,11 +71,11 @@ func TestLogInfo(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Info("testloginfo")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloginfo", map[string]interface{}{}))
+		"logger-tester", kv.Info, "testloginfo", map[string]any{}))
 	buf.Reset()
-	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.InfoD("testloginfo", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+		"logger-tester", kv.Info, "testloginfo", map[string]any{"key1": "val1", "key2": "val2"}))
 }
 
 func TestLogWarning(t *testing.T) {
@@ -83,11 +84,11 @@ func TestLogWarning(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Warn("testlogwarning")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Warning, "testlogwarning", map[string]interface{}{}))
+		"logger-tester", kv.Warning, "testlogwarning", map[string]any{}))
 	buf.Reset()
-	logger.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.WarnD("testlogwarning", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Warning, "testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+		"logger-tester", kv.Warning, "testlogwarning", map[string]any{"key1": "val1", "key2": "val2"}))
 }
 
 func TestLogError(t *testing.T) {
@@ -96,11 +97,11 @@ func TestLogError(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Error("testlogerror")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Error, "testlogerror", map[string]interface{}{}))
+		"logger-tester", kv.Error, "testlogerror", map[string]any{}))
 	buf.Reset()
-	logger.ErrorD("testlogerror", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.ErrorD("testlogerror", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Error, "testlogerror", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+		"logger-tester", kv.Error, "testlogerror", map[string]any{"key1": "val1", "key2": "val2"}))
 }
 
 func TestLogCritical(t *testing.T) {
@@ -109,11 +110,11 @@ func TestLogCritical(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Critical("testlogcritical")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Critical, "testlogcritical", map[string]interface{}{}))
+		"logger-tester", kv.Critical, "testlogcritical", map[string]any{}))
 	buf.Reset()
-	logger.CriticalD("testlogcritical", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.CriticalD("testlogcritical", map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Critical, "testlogcritical", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+		"logger-tester", kv.Critical, "testlogcritical", map[string]any{"key1": "val1", "key2": "val2"}))
 }
 
 func TestLogCounter(t *testing.T) {
@@ -122,11 +123,11 @@ func TestLogCounter(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.Counter("testlogcounter")
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testlogcounter", map[string]interface{}{"type": "counter", "value": 1}))
+		"logger-tester", kv.Info, "testlogcounter", map[string]any{"type": "counter", "value": 1}))
 	buf.Reset()
-	logger.CounterD("testlogcounter", 2, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.CounterD("testlogcounter", 2, map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testlogcounter", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "counter", "value": 2}))
+		"logger-tester", kv.Info, "testlogcounter", map[string]any{"key1": "val1", "key2": "val2", "type": "counter", "value": 2}))
 }
 
 func TestLogGaugeInt(t *testing.T) {
@@ -135,11 +136,11 @@ func TestLogGaugeInt(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.GaugeInt("testloggauge", 0)
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"type": "gauge", "value": 0}))
+		"logger-tester", kv.Info, "testloggauge", map[string]any{"type": "gauge", "value": 0}))
 	buf.Reset()
-	logger.GaugeIntD("testloggauge", 4, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.GaugeIntD("testloggauge", 4, map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4}))
+		"logger-tester", kv.Info, "testloggauge", map[string]any{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4}))
 }
 
 func TestLogGaugeFloat(t *testing.T) {
@@ -148,22 +149,22 @@ func TestLogGaugeFloat(t *testing.T) {
 	logger.SetOutput(buf)
 	logger.GaugeFloat("testloggauge", 0.0)
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"type": "gauge", "value": 0.0}))
+		"logger-tester", kv.Info, "testloggauge", map[string]any{"type": "gauge", "value": 0.0}))
 	buf.Reset()
-	logger.GaugeFloatD("testloggauge", 4.0, map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.GaugeFloatD("testloggauge", 4.0, map[string]any{"key1": "val1", "key2": "val2"})
 	assertLogFormatAndCompareContent(t, buf.String(), kv.FormatLog(
-		"logger-tester", kv.Info, "testloggauge", map[string]interface{}{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4.0}))
+		"logger-tester", kv.Info, "testloggauge", map[string]any{"key1": "val1", "key2": "val2", "type": "gauge", "value": 4.0}))
 }
 
 func TestDiffOutput(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
-	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.InfoD("testloginfo", map[string]any{"key1": "val1", "key2": "val2"})
 	infoLog := buf.String()
 	buf2 := &bytes.Buffer{}
 	logger.SetOutput(buf2)
-	logger.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.WarnD("testlogwarning", map[string]any{"key1": "val1", "key2": "val2"})
 	assert.NotEqual(t, buf.String(), buf2.String())
 	assert.Equal(t, infoLog, buf.String())
 }
@@ -197,8 +198,8 @@ func TestDiffFormat(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := New("logger-tester")
 	logger.SetOutput(buf)
-	logger.SetFormatter(func(data map[string]interface{}) string { return "This is a test" })
-	logger.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.SetFormatter(func(data map[string]any) string { return "This is a test" })
+	logger.WarnD("testlogwarning", map[string]any{"key1": "val1", "key2": "val2"})
 	assert.Equal(t, "This is a test\n", buf.String())
 }
 
@@ -209,13 +210,13 @@ func TestMultipleLoggers(t *testing.T) {
 	logger2 := New("logger-tester2")
 	logger1.SetOutput(buf1)
 	logger2.SetOutput(buf2)
-	logger1.WarnD("testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger1.WarnD("testlogwarning", map[string]any{"key1": "val1", "key2": "val2"})
 	logger2.Info("testloginfo")
 	logOutput1 := buf1.String()
 	assertLogFormatAndCompareContent(t, logOutput1, kv.FormatLog(
-		"logger-tester1", kv.Warning, "testlogwarning", map[string]interface{}{"key1": "val1", "key2": "val2"}))
+		"logger-tester1", kv.Warning, "testlogwarning", map[string]any{"key1": "val1", "key2": "val2"}))
 	assertLogFormatAndCompareContent(t, buf2.String(), kv.FormatLog(
-		"logger-tester2", kv.Info, "testloginfo", map[string]interface{}{}))
+		"logger-tester2", kv.Info, "testloginfo", map[string]any{}))
 
 	logger2.SetOutput(buf1)
 	logger2.Info("testloginfo")
@@ -268,7 +269,7 @@ func TestRouter(t *testing.T) {
 
 	m := MockRouter{t, false}
 	logger.SetRouter(&m)
-	logger.InfoD("testloginfo", map[string]interface{}{"key1": "val1", "key2": "val2"})
+	logger.InfoD("testloginfo", map[string]any{"key1": "val1", "key2": "val2"})
 	assert.True(t, m.called)
 	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
 		"key1":    "val1",
@@ -277,7 +278,8 @@ func TestRouter(t *testing.T) {
 	})
 	assertLogFormatAndCompareContent(t, buf.String(), expected)
 }
-func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
+
+func (m *MockRouter) Route(msg map[string]any) map[string]any {
 	assert.False(m.t, m.called)
 	m.called = true
 	expected := kv.FormatLog("logger-tester", kv.Info, "testloginfo", M{
@@ -285,7 +287,7 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 		"key2": "val2",
 	})
 	assertLogFormatAndCompareContent(m.t, kv.Format(msg), expected)
-	return map[string]interface{}{"routekey": 42}
+	return map[string]any{"routekey": 42}
 }
 
 func TestLoggerImplementsKayveeLogger(t *testing.T) {

@@ -37,7 +37,7 @@ func NewMockCountLogger(source string) *MockRouteCountLogger {
 }
 
 // NewMockCountLoggerWithContext returns a new MockRoutCountLogger with the specified `source` and `contextValues`.
-func NewMockCountLoggerWithContext(source string, contextValues map[string]interface{}) *MockRouteCountLogger {
+func NewMockCountLoggerWithContext(source string, contextValues map[string]any) *MockRouteCountLogger {
 	routeMatches := make(map[string][]router.RuleOutput)
 	lg := NewWithContext(source, contextValues)
 	lg.setFormatLogger(&routeCountingFormatLogger{
@@ -65,16 +65,16 @@ type routeCountingFormatLogger struct {
 
 // formatAndLog tracks routing statistics for this mock router.
 // Initialization works as with the default format logger, but no formatting or logging is actually performed.
-func (fl *routeCountingFormatLogger) formatAndLog(data map[string]interface{}) {
+func (fl *routeCountingFormatLogger) formatAndLog(data map[string]any) {
 	routeData, ok := data["_kvmeta"]
 	if !ok {
 		return
 	}
-	routes, ok := routeData.(map[string]interface{})["routes"]
+	routes, ok := routeData.(map[string]any)["routes"]
 	if !ok {
 		return
 	}
-	for _, route := range routes.([]map[string]interface{}) {
+	for _, route := range routes.([]map[string]any) {
 		rule := route["rule"].(string)
 		fl.mu.Lock()
 		fl.routeMatches[rule] = append(fl.routeMatches[rule], route)
@@ -109,7 +109,7 @@ func (ml *MockRouteCountLogger) AddContext(key, val string) {
 }
 
 // GetContext implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) GetContext(key string) (interface{}, bool) {
+func (ml *MockRouteCountLogger) GetContext(key string) (any, bool) {
 	return ml.logger.GetContext(key)
 }
 
@@ -190,53 +190,53 @@ func (ml *MockRouteCountLogger) Timer(title string) *Timer {
 }
 
 // TraceD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) TraceD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) TraceD(title string, data map[string]any) {
 	ml.logger.TraceD(title, data)
 }
 
 // DebugD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) DebugD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) DebugD(title string, data map[string]any) {
 	ml.logger.DebugD(title, data)
 }
 
 // InfoD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) InfoD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) InfoD(title string, data map[string]any) {
 	ml.logger.InfoD(title, data)
 }
 
 // WarnD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) WarnD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) WarnD(title string, data map[string]any) {
 	ml.logger.WarnD(title, data)
 }
 
 // ErrorD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) ErrorD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) ErrorD(title string, data map[string]any) {
 	ml.logger.ErrorD(title, data)
 }
 
 // CriticalD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) CriticalD(title string, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) CriticalD(title string, data map[string]any) {
 	ml.logger.CriticalD(title, data)
 }
 
 // CounterD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) CounterD(title string, value int, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) CounterD(title string, value int, data map[string]any) {
 	ml.logger.CounterD(title, value, data)
 }
 
 // GaugeIntD implements the method for the KayveeLogger interface.
-func (ml *MockRouteCountLogger) GaugeIntD(title string, value int, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) GaugeIntD(title string, value int, data map[string]any) {
 	ml.logger.GaugeIntD(title, value, data)
 }
 
 // GaugeFloatD implements the method for the KayveeLogger interface.
 // Logs with type = gauge, and value = value
-func (ml *MockRouteCountLogger) GaugeFloatD(title string, value float64, data map[string]interface{}) {
+func (ml *MockRouteCountLogger) GaugeFloatD(title string, value float64, data map[string]any) {
 	ml.logger.GaugeFloatD(title, value, data)
 }
 
 // TimerD implements the method for the KayveeLogger interface.
 // Returns Timer structure with .Stop method
-func (ml *MockRouteCountLogger) TimerD(title string, data map[string]interface{}) *Timer {
+func (ml *MockRouteCountLogger) TimerD(title string, data map[string]any) *Timer {
 	return ml.logger.TimerD(title, data)
 }

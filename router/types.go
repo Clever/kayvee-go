@@ -4,7 +4,7 @@ package router
 
 // Router is an an interface for an object that can route log lines.
 type Router interface {
-	Route(map[string]interface{}) map[string]interface{}
+	Route(map[string]any) map[string]any
 }
 
 // RuleRouter is an object that can route log lines according to `rules`.
@@ -16,7 +16,7 @@ type RuleRouter struct {
 type RuleMatchers map[string][]string
 
 // RuleOutput describes what to do if a log line matches a rule.
-type RuleOutput map[string]interface{}
+type RuleOutput map[string]any
 
 // Rule is a log routing rule
 type Rule struct {

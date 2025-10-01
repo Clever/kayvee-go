@@ -48,13 +48,13 @@ func validate(schemaLoader, docLoader gojsonschema.JSONLoader) error {
 
 // UnmarshalYAML unmarshals the `matchers` section of a log-routing
 // configuration and validates it.
-func (m *RuleMatchers) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *RuleMatchers) UnmarshalYAML(unmarshal func(any) error) error {
 	// Use a map[string]interface{} for validation purposes. If we used a
 	// map[string][]string, the YAML unmarshaler would coerce non-string values
 	// into string values, breaking our ability to validate configs. i.e., it
 	// would change `title: [7, []]` into `title: ["7", "[]"]`. Using a
 	// map[string]interface{} tells the unmarshaler to use natural types.
-	var rawData map[string][]interface{}
+	var rawData map[string][]any
 	err := unmarshal(&rawData)
 	if err != nil {
 		return err

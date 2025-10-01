@@ -3,11 +3,12 @@ package kinesisstream
 import (
 	"testing"
 
-	"github.com/Clever/kayvee-go/v7/logger"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	gomock "github.com/golang/mock/gomock"
+
+	"github.com/Clever/kayvee-go/v7/logger"
 )
 
 func TestLogger(t *testing.T) {
