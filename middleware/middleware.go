@@ -9,7 +9,12 @@ Package middleware provides a customizable Kayvee logging middleware for HTTP se
 package middleware
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Clever/kayvee-go/v7/logger"
@@ -35,13 +40,17 @@ type logHandler struct {
 	handlers []func(req *http.Request) map[string]interface{}
 	h        http.Handler
 	source   string
+	ip       string
 }
 
 func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 
 	// create and inject a logger into req.Context
-	lggr := logger.New(l.source)
+	lggr := logger.NewConcreteLogger(l.source)
+	// This allows us to more easily correlate application log with alb
+	// access logs.
+	lggr.AddContext("task_ip", l.ip)
 	req = req.WithContext(logger.NewContext(req.Context(), lggr))
 
 	lrw := &loggedResponseWriter{
@@ -98,11 +107,16 @@ func (l *logHandler) applyHandlers(req *http.Request, finalizer map[string]inter
 // New takes in an http Handler to wrap with logging, the logger source name to use, and any amount of
 // optional handlers to customize the data that's logged.
 // On every request, the middleware will create a logger and place it in req.Context().
-func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]interface{}) http.Handler {
+func New(h http.Handler, source string, handlers ...func(*http.Request) map[string]any) http.Handler {
+	ip, err := getTaskIP()
+	if err != nil {
+		log.Println("ERROR: couldn't get task IP:", err)
+	}
 	return &logHandler{
 		handlers: handlers,
 		h:        h,
 		source:   source,
+		ip:       ip,
 	}
 }
 
@@ -152,4 +166,62 @@ func logLevelFromStatus(status int) logger.LogLevel {
 		return logger.Warning
 	}
 	return logger.Info
+}
+
+// TaskMetadata represents the ECS task metadata structure
+type taskMetadata struct {
+	Cluster    string      `json:"Cluster"`
+	TaskARN    string      `json:"TaskARN"`
+	Family     string      `json:"Family"`
+	Revision   string      `json:"Revision"`
+	Containers []container `json:"Containers"`
+}
+
+type container struct {
+	Name     string    `json:"Name"`
+	Image    string    `json:"Image"`
+	Networks []network `json:"Networks"`
+}
+
+type network struct {
+	NetworkMode   string   `json:"NetworkMode"`
+	IPv4Addresses []string `json:"IPv4Addresses"`
+}
+
+func getTaskIP() (string, error) {
+	metadataURI := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
+	if metadataURI == "" {
+		return "", fmt.Errorf("ECS_CONTAINER_METADATA_URI_V4 not set")
+	}
+
+	resp, err := http.Get(metadataURI + "/task")
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var taskMetadata taskMetadata
+	if err := json.Unmarshal(body, &taskMetadata); err != nil {
+		return "", err
+	}
+
+	cn := fmt.Sprintf("%s--%s", os.Getenv("_DEPLOY_ENV"), os.Getenv("_APP_NAME"))
+
+	// Find the specific container
+	for _, container := range taskMetadata.Containers {
+		if container.Name == cn {
+			if len(container.Networks) > 0 && len(container.Networks[0].IPv4Addresses) > 0 {
+				return container.Networks[0].IPv4Addresses[0], nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("container %s not found or has no IP", cn)
 }
