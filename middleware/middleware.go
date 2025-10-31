@@ -50,7 +50,9 @@ func (l *logHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	lggr := logger.NewConcreteLogger(l.source)
 	// This allows us to more easily correlate application log with alb
 	// access logs.
-	lggr.AddContext("task_ip", l.ip)
+	if l.ip != "" {
+		lggr.AddContext("task_ip", l.ip)
+	}
 	req = req.WithContext(logger.NewContext(req.Context(), lggr))
 
 	lrw := &loggedResponseWriter{
