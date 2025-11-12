@@ -291,3 +291,44 @@ func (m *MockRouter) Route(msg map[string]interface{}) map[string]interface{} {
 func TestLoggerImplementsKayveeLogger(t *testing.T) {
 	assert.Implements(t, (*KayveeLogger)(nil), &Logger{}, "*Logger should implement KayveeLogger")
 }
+
+func TestLoggerDeleteContext(t *testing.T) {
+	buf := &bytes.Buffer{}
+	logger := New("logger-tester")
+	logger.SetOutput(buf)
+	logger.AddContext("do", "doe, a deer, a female deer")
+	logger.AddContext("re", "ray, a drop of golden sun")
+	logger.AddContext("mi", "me, a name I call myself")
+	logger.Info("1")
+	assertLogFormatAndCompareContent(
+		t,
+		buf.String(),
+		kv.FormatLog(
+			"logger-tester",
+			kv.Info,
+			"1",
+			M{
+				"do": "doe, a deer, a female deer",
+				"re": "ray, a drop of golden sun",
+				"mi": "me, a name I call myself",
+			},
+		),
+	)
+
+	buf.Reset()
+	logger.DeleteContext("do")
+	logger.Info("2")
+	assertLogFormatAndCompareContent(
+		t,
+		buf.String(),
+		kv.FormatLog(
+			"logger-tester",
+			kv.Info,
+			"2",
+			M{
+				"re": "ray, a drop of golden sun",
+				"mi": "me, a name I call myself",
+			},
+		),
+	)
+}

@@ -113,6 +113,11 @@ func (ml *MockRouteCountLogger) GetContext(key string) (interface{}, bool) {
 	return ml.logger.GetContext(key)
 }
 
+// DeleteContext implements the method for the KayveeLogger interface
+func (ml *MockRouteCountLogger) DeleteContext(key string) {
+	ml.logger.DeleteContext(key)
+}
+
 // SetLogLevel implements the method for the KayveeLogger interface.
 func (ml *MockRouteCountLogger) SetLogLevel(logLvl LogLevel) {
 	ml.logger.SetLogLevel(logLvl)

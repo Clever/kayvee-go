@@ -25,6 +25,10 @@ type KayveeLogger interface {
 	// GetContext reads a key-val from the global map of data that will be logged with all log messages.
 	GetContext(key string) (interface{}, bool)
 
+	// DeleteContext removes a key from context so that keys can be added on a temporary basis (for
+	// example, within a function) without using different logger instances.
+	DeleteContext(key string)
+
 	// SetConfig allows configuration changes in one go
 	SetConfig(source string, logLvl LogLevel, formatter Formatter, output io.Writer)
 

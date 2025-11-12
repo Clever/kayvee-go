@@ -161,6 +161,13 @@ func (l *Logger) GetContext(key string) (interface{}, bool) {
 	return val, ok
 }
 
+func (l *Logger) DeleteContext(key string) {
+	l.globalsL.Lock()
+	defer l.globalsL.Unlock()
+
+	delete(l.globals, key)
+}
+
 // SetRouter implements the method for the KayveeLogger interface.
 func (l *Logger) SetRouter(router router.Router) {
 	l.logRouter = router
