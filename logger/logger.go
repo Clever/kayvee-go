@@ -106,12 +106,13 @@ type Logger struct {
 var globalRouter router.Router
 
 var reservedKeyNames = map[string]bool{
-	"title":   true,
-	"source":  true,
-	"value":   true,
-	"type":    true,
-	"level":   true,
-	"_kvmeta": true,
+	"title":        true,
+	"source":       true,
+	"value":        true,
+	"type":         true,
+	"level":        true,
+	"_kvmeta":      true,
+	"context_name": true,
 }
 
 // SetGlobalRouting installs a new log router onto the KayveeLogger with the

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -11,6 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	os.Setenv("_DEPLOY_ENV", "testing")
+	os.Setenv("_EXECUTION_NAME", "abc123")
+}
 
 // takes two strings (which are assumed to be JSON)
 func compareJSONStrings(t *testing.T, expected string, actual string) {
